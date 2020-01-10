@@ -98,7 +98,7 @@
 
 Name:		pidgin
 Version:	2.7.9
-Release:	27%{?dist}
+Release:	28%{?dist}
 License:        GPLv2+ and GPLv2 and MIT
 # GPLv2+ - libpurple, gnt, finch, pidgin, most prpls
 # GPLv2 - silc & novell prpls
@@ -208,6 +208,9 @@ Patch124: pidgin-2.7.9-CVE-2013-6490.patch
 
 # CVE-2014-0020
 Patch125: pidgin-2.7.9-CVE-2014-0020.patch
+
+# https://bugzilla.redhat.com/show_bug.cgi?id=1333636
+Patch126: pidgin-2.7.9-EL6.9_translations.patch
 
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 Summary:	A Gtk+ based multiprotocol instant messaging client
@@ -495,6 +498,7 @@ echo "FEDORA=%{fedora} RHEL=%{rhel}"
 %patch123 -p1 -b .CVE-2013-6489
 %patch124 -p1 -b .CVE-2013-6490
 %patch125 -p1 -b .CVE-2014-0020
+%patch126 -p1 -b .translations
 
 # Our preferences
 cp %{SOURCE1} prefs.xml
@@ -749,6 +753,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Mon Nov 21 2016 Debarshi Ray <rishi@fedoraproject.org> - 2.7.9-28.el6
+- Update translations
+Resolves: #1333636
+
 * Mon Feb 03 2014 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-27.el6
 - Fix regression in CVE-2013-6483.
 
