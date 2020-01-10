@@ -98,7 +98,7 @@
 
 Name:		pidgin
 Version:	2.7.9
-Release:	10%{?dist}_4.1
+Release:	11%{?dist}
 License:        GPLv2+ and GPLv2 and MIT
 # GPLv2+ - libpurple, gnt, finch, pidgin, most prpls
 # GPLv2 - silc & novell prpls
@@ -695,17 +695,17 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
-* Mon Mar 4 2013 Huzaifa Sidhpurwala <huzaifas@redhat.com> - 2.7.9-10.el6_4.1
-- Fix spec file for disttag
+* Tue Jun 11 2013 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-11.el6
+- Rebuild against newer evolution-data-server (RH bug #973288).
 
 * Fri Feb 22 2013 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-10.el6
-- Add patch for CVE-2013-0274 (RH bug #910653).
+- Add patch for CVE-2013-0274 (RH bug #910654).
 
 * Fri Feb 22 2013 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-9.el6
-- Add patch for CVE-2013-0273 (RH bug #910653).
+- Add patch for CVE-2013-0273 (RH bug #910654).
 
 * Fri Feb 22 2013 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-8.el6
-- Add patch for CVE-2013-0272 (RH bug #910653).
+- Add patch for CVE-2013-0272 (RH bug #910654).
 
 * Mon Jul  9 2012 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-7.el6
 - Add patch for CVE-2011-2485 (RH bug #837562).
