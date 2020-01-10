@@ -98,7 +98,7 @@
 
 Name:		pidgin
 Version:	2.7.9
-Release:	11%{?dist}
+Release:	27%{?dist}
 License:        GPLv2+ and GPLv2 and MIT
 # GPLv2+ - libpurple, gnt, finch, pidgin, most prpls
 # GPLv2 - silc & novell prpls
@@ -168,6 +168,46 @@ Patch110: pidgin-2.7.9-CVE-2013-0273.patch
 
 # CVE-2013-2074
 Patch111: pidgin-2.7.9-CVE-2013-0274.patch
+
+# CVE-2012-6152
+Patch112: pidgin-2.7.9-CVE-2012-6152.patch
+
+# CVE-2013-6477
+Patch113: pidgin-2.7.9-CVE-2013-6477.patch
+
+# CVE-2013-6478
+Patch114: pidgin-2.7.9-CVE-2013-6478.patch
+
+# CVE-2013-6479
+Patch115: pidgin-2.7.9-CVE-2013-6479.patch
+
+# CVE-2013-6481
+Patch116: pidgin-2.7.9-CVE-2013-6481.patch
+
+# CVE-2013-6482
+Patch117: pidgin-2.7.9-CVE-2013-6482.patch
+
+# CVE-2013-6483
+Patch118: pidgin-2.7.9-CVE-2013-6483.patch
+Patch119: pidgin-2.7.9-CVE-2013-6483-regression.patch
+
+# CVE-2013-6484
+Patch120: pidgin-2.7.9-CVE-2013-6484.patch
+
+# CVE-2013-6485
+Patch121: pidgin-2.7.9-CVE-2013-6485.patch
+
+# CVE-2013-6487
+Patch122: pidgin-2.7.9-CVE-2013-6487.patch
+
+# CVE-2013-6489
+Patch123: pidgin-2.7.9-CVE-2013-6489.patch
+
+# CVE-2013-6490
+Patch124: pidgin-2.7.9-CVE-2013-6490.patch
+
+# CVE-2014-0020
+Patch125: pidgin-2.7.9-CVE-2014-0020.patch
 
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 Summary:	A Gtk+ based multiprotocol instant messaging client
@@ -441,6 +481,20 @@ echo "FEDORA=%{fedora} RHEL=%{rhel}"
 %patch109 -p1 -b .CVE-2013-0272
 %patch110 -p1 -b .CVE-2013-0273
 %patch111 -p1 -b .CVE-2013-0274
+%patch112 -p1 -b .CVE-2012-6152
+%patch113 -p1 -b .CVE-2013-6477
+%patch114 -p1 -b .CVE-2013-6478
+%patch115 -p1 -b .CVE-2013-6479
+%patch116 -p1 -b .CVE-2013-6481
+%patch117 -p1 -b .CVE-2013-6482
+%patch118 -p1 -b .CVE-2013-6483
+%patch119 -p1 -b .CVE-2013-6483-regression
+%patch120 -p1 -b .CVE-2013-6484
+%patch121 -p1 -b .CVE-2013-6485
+%patch122 -p1 -b .CVE-2013-6487
+%patch123 -p1 -b .CVE-2013-6489
+%patch124 -p1 -b .CVE-2013-6490
+%patch125 -p1 -b .CVE-2014-0020
 
 # Our preferences
 cp %{SOURCE1} prefs.xml
@@ -695,6 +749,54 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Mon Feb 03 2014 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-27.el6
+- Fix regression in CVE-2013-6483.
+
+* Thu Jan 30 2014 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-26.el6
+- Fix patch for CVE-2012-6152 (RH bug #1058242).
+
+* Wed Jan 29 2014 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-25.el6
+- Add patch for CVE-2014-0020 (RH bug #1058242).
+
+* Wed Jan 29 2014 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-24.el6
+- Add patch for CVE-2013-6490 (RH bug #1058242).
+
+* Wed Jan 29 2014 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-23.el6
+- Add patch for CVE-2013-6489 (RH bug #1058242).
+
+* Wed Jan 29 2014 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-22.el6
+- Add patch for CVE-2013-6487 (RH bug #1058242).
+
+* Wed Jan 29 2014 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-21.el6
+- Add patch for CVE-2013-6477 (RH bug #1058242).
+
+* Wed Jan 29 2014 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-20.el6
+- Add patch for CVE-2013-6485 (RH bug #1058242).
+
+* Wed Jan 29 2014 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-19.el6
+- Add patch for CVE-2013-6484 (RH bug #1058242).
+
+* Wed Jan 29 2014 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-18.el6
+- Add patch for CVE-2013-6483 (RH bug #1058242).
+
+* Wed Jan 29 2014 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-17.el6
+- Add patch for CVE-2013-6482 (RH bug #1058242).
+
+* Tue Jan 28 2014 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-16.el6
+- Add patch for CVE-2013-6481 (RH bug #1058242).
+
+* Tue Jan 28 2014 Matthew Barnes <mbarnew@redhat.com> - 2.7.9-15.el6
+- Add patch for CVE-2013-6479 (RH bug #1058242).
+
+* Tue Jan 28 2014 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-14.el6
+- Turns out the previous patch is actually for CVE-2013-6478.
+
+* Mon Jan 27 2014 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-13.el6
+- Add patch for CVE-2013-6477 (RH bug #1058242).
+
+* Mon Jan 27 2014 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-12.el6
+- Add patch for CVE-2012-6152 (RH bug #1058242).
+
 * Tue Jun 11 2013 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-11.el6
 - Rebuild against newer evolution-data-server (RH bug #973288).
 
