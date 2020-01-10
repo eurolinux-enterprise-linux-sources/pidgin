@@ -98,7 +98,7 @@
 
 Name:		pidgin
 Version:	2.7.9
-Release:	5%{?dist}.2
+Release:	10%{?dist}_4.1
 License:        GPLv2+ and GPLv2 and MIT
 # GPLv2+ - libpurple, gnt, finch, pidgin, most prpls
 # GPLv2 - silc & novell prpls
@@ -159,6 +159,15 @@ Patch107: pidgin-2.7.9-CVE-2012-3374.patch
 
 # CVE-2011-2485
 Patch108: pidgin-2.7.9-CVE-2011-2485.patch
+
+# CVE-2013-0272
+Patch109: pidgin-2.7.9-CVE-2013-0272.patch
+
+# CVE-2013-0273
+Patch110: pidgin-2.7.9-CVE-2013-0273.patch
+
+# CVE-2013-2074
+Patch111: pidgin-2.7.9-CVE-2013-0274.patch
 
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 Summary:	A Gtk+ based multiprotocol instant messaging client
@@ -429,6 +438,9 @@ echo "FEDORA=%{fedora} RHEL=%{rhel}"
 %patch106 -p1 -b .CVE-2012-2318
 %patch107 -p1 -b .CVE-2012-3374
 %patch108 -p1 -b .CVE-2011-2485
+%patch109 -p1 -b .CVE-2013-0272
+%patch110 -p1 -b .CVE-2013-0273
+%patch111 -p1 -b .CVE-2013-0274
 
 # Our preferences
 cp %{SOURCE1} prefs.xml
@@ -683,10 +695,22 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
-* Mon Jul  9 2012 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-5.el6.2
-- Add patch for CVE-2011-2485 (RH bug #837561).
+* Mon Mar 4 2013 Huzaifa Sidhpurwala <huzaifas@redhat.com> - 2.7.9-10.el6_4.1
+- Fix spec file for disttag
 
-* Thu Jul  5 2012 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-5.el6.1
+* Fri Feb 22 2013 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-10.el6
+- Add patch for CVE-2013-0274 (RH bug #910653).
+
+* Fri Feb 22 2013 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-9.el6
+- Add patch for CVE-2013-0273 (RH bug #910653).
+
+* Fri Feb 22 2013 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-8.el6
+- Add patch for CVE-2013-0272 (RH bug #910653).
+
+* Mon Jul  9 2012 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-7.el6
+- Add patch for CVE-2011-2485 (RH bug #837562).
+
+* Thu Jul  5 2012 Matthew Barnes <mbarnes@redhat.com> - 2.7.9-6.el6
 - Add patch for CVE-2012-1178 (RH bug #837560).
 - Add patch for CVE-2012-2318 (RH bug #837560).
 - Add patch for CVE-2012-3374 (RH bug #837560).
