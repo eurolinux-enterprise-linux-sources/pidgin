@@ -73,7 +73,7 @@ void yahoo_process_picture(PurpleConnection *gc, struct yahoo_packet *pkt)
 {
 	YahooData *yd;
 	GSList *l = pkt->hash;
-	char *who = NULL, *us = NULL;
+	char *who = NULL;
 	gboolean got_icon_info = FALSE, send_icon_info = FALSE;
 	char *url = NULL;
 	int checksum = 0;
@@ -84,10 +84,14 @@ void yahoo_process_picture(PurpleConnection *gc, struct yahoo_packet *pkt)
 		switch (pair->key) {
 		case 1:
 		case 4:
-			who = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				who = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_picture "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
-		case 5:
-			us = pair->value;
+		case 5: /* us */
 			break;
 		case 13: {
 				int tmp;
@@ -100,7 +104,12 @@ void yahoo_process_picture(PurpleConnection *gc, struct yahoo_packet *pkt)
 				break;
 			}
 		case 20:
-			url = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				url = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_picture "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		case 192:
 			checksum = strtol(pair->value, NULL, 10);
@@ -154,7 +163,12 @@ void yahoo_process_picture_checksum(PurpleConnection *gc, struct yahoo_packet *p
 
 		switch (pair->key) {
 		case 4:
-			who = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				who = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_picture_checksum "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		case 5:
 			/* us */
@@ -197,7 +211,12 @@ void yahoo_process_picture_upload(PurpleConnection *gc, struct yahoo_packet *pkt
 			/* filename on our computer. */
 			break;
 		case 20: /* url at yahoo */
-			url = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				url = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_picture_upload "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 		case 38: /* timestamp */
 			break;
 		}
@@ -225,7 +244,12 @@ void yahoo_process_avatar_update(PurpleConnection *gc, struct yahoo_packet *pkt)
 
 		switch (pair->key) {
 		case 4:
-			who = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				who = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_avatar_upload "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		case 5:
 			/* us */
@@ -396,7 +420,7 @@ static void yahoo_buddy_icon_upload_pending(gpointer data, gint source, PurpleIn
 		return;
 	}
 	d->pos += wrote;
-	if (d->pos >= d->str->len) {
+	if ((size_t)d->pos >= d->str->len) {
 		purple_debug_misc("yahoo", "Finished uploading buddy icon.\n");
 		purple_input_remove(d->watcher);
 		/* Clean out the sent buffer and reuse it to read the result */

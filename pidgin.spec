@@ -30,7 +30,6 @@
 %global nss_md2_disabled        0
 %global vv_support              0
 %global libidn_support          0
-%global disable_silc            0
 %global disable_evolution       0
 %global split_evolution         0
 %global use_system_certs        0
@@ -82,12 +81,6 @@
 %if 0%{?fedora} >= 12
 %global krb4_removed            1
 %endif
-# EL6: Disable SILC protocol
-# (get rid of extra crypto lib for perpetually broken protocol that nobody uses)
-# (the above comment is not necessarily the view held by all maintaners of this package)
-%if 0%{?rhel} >= 6
-%global disable_silc            1
-%endif
 # F13+ Split Evolution plugin to separate package (#581144)
 %if 0%{?fedora} >= 13
 %global split_evolution         1
@@ -110,12 +103,17 @@
 %global split_evolution         0
 %endif
 
+# valgrind available only on selected arches
+%ifarch %{ix86} x86_64 ppc ppc64 ppc64le s390x armv7hl aarch64
+%global has_valgrind 1
+%endif
+
 Name:           pidgin
-Version:        2.10.7
-Release:        26%{?dist}
+Version:        2.10.11
+Release:        8%{?dist}
 License:        GPLv2+ and GPLv2 and MIT
 # GPLv2+ - libpurple, gnt, finch, pidgin, most prpls
-# GPLv2 - silc & novell prpls
+# GPLv2 - novell prpls
 # MIT - Zephyr prpl
 Group:          Applications/Internet
 URL:            http://pidgin.im/
@@ -147,51 +145,35 @@ Source1:        purple-fedora-prefs.xml
 
 ## Patches 0-99: Fedora specific or upstream wont accept
 Patch0:         pidgin-NOT-UPSTREAM-2.5.2-rhel4-sound-migration.patch
-Patch1:         pidgin-2.10.7-drop-gadu-gadu.patch
+Patch1:         pidgin-2.10.9-valgrind.patch
+
+# https://bugzilla.redhat.com/show_bug.cgi?id=1026505
+# https://bugzilla.redhat.com/show_bug.cgi?id=1439296
+# https://bugzilla.redhat.com/show_bug.cgi?id=1470677
+# https://bugzilla.redhat.com/show_bug.cgi?id=1470681
+# https://bugzilla.redhat.com/show_bug.cgi?id=1470685
+Patch2:         pidgin-2.10.11-drop-gadu-gadu-msn-mxit-etc.patch
+
+# https://bugzilla.redhat.com/show_bug.cgi?id=1500403
+Patch3:         pidgin-2.10.11-drop-aim.patch
 
 ## Patches 100+: To be Included in Future Upstream
-Patch100:       pidgin-2.10.1-fix-msn-ft-crashes.patch
-Patch101:       pidgin-2.10.7-link-libirc-to-libsasl2.patch
+Patch100:       pidgin-2.10.11-CVE-2017-2640.patch
 
-# CVE-2012-6152
-Patch102: pidgin-2.10.7-CVE-2012-6152.patch
+# http://pidgin.im/pipermail/devel/2011-November/010477.html
+Patch101:       pidgin-2.10.1-fix-msn-ft-crashes.patch
 
-# CVE-2013-6477
-Patch103: pidgin-2.10.7-CVE-2013-6477.patch
+# https://developer.pidgin.im/ticket/17200
+Patch102:       pidgin-2.10.11-jabber-Avoid-a-use-after-free-in-an-error-path.patch
 
-# CVE-2013-6478
-Patch104: pidgin-2.10.7-CVE-2013-6478.patch
+# https://bugzilla.redhat.com/show_bug.cgi?id=1446368
+Patch103:       pidgin-2.10.11-Try-to-fix-a-signed-unsigned-warning.patch
 
-# CVE-2013-6479
-Patch105: pidgin-2.10.7-CVE-2013-6479.patch
+# https://bugzilla.redhat.com/show_bug.cgi?id=1440215
+Patch104:       pidgin-2.10.11-IRC-Skip-EXTERNAL-SASL-auth-mechanism.patch
 
-# CVE-2013-6481
-Patch106: pidgin-2.10.7-CVE-2013-6481.patch
-
-# CVE-2013-6482
-Patch107: pidgin-2.10.7-CVE-2013-6482.patch
-
-# CVE-2013-6483
-Patch108: pidgin-2.10.7-CVE-2013-6483.patch
-Patch109: pidgin-2.10.7-CVE-2013-6483-regression.patch
-
-# CVE-2013-6484
-Patch110: pidgin-2.10.7-CVE-2013-6484.patch
-
-# CVE-2013-6485
-Patch111: pidgin-2.10.7-CVE-2013-6485.patch
-
-# CVE-2013-6487
-Patch112: pidgin-2.10.7-CVE-2013-6487.patch
-
-# CVE-2013-6489
-Patch113: pidgin-2.10.7-CVE-2013-6489.patch
-
-# CVE-2013-6490
-Patch114: pidgin-2.10.7-CVE-2013-6490.patch
-
-# CVE-2014-0020
-Patch115: pidgin-2.10.7-CVE-2014-0020.patch
+# https://bugzilla.redhat.com/show_bug.cgi?id=1433761
+Patch105:       pidgin-2.10.11-Rework-tray-icon-blinking.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-root
 Summary:        A Gtk+ based multiprotocol instant messaging client
@@ -241,10 +223,6 @@ BuildRequires:  libxml2-devel
 %if ! %{krb4_removed}
 # krb5 needed for Zephyr (FC1+)
 BuildRequires:  krb5-devel
-%endif
-# SILC integration (FC3+)
-%if ! %{disable_silc}
-BuildRequires:  libsilc-devel
 %endif
 # DBus integration (FC5+)
 %if %{dbus_integration}
@@ -313,19 +291,23 @@ BuildRequires:  libgadu-devel
 BuildRequires:  doxygen
 %endif
 
+# Use distribution's valgrind.h
+%if 0%{?has_valgrind}
+BuildRequires:  valgrind-devel
+%endif
+
 %description
 Pidgin allows you to talk to anyone using a variety of messaging
-protocols including AIM, MSN, Yahoo!, Jabber, Bonjour, Gadu-Gadu,
-ICQ, IRC, Novell Groupwise, QQ, Lotus Sametime, SILC, Simple and
-Zephyr.  These protocols are implemented using a modular, easy to
-use design.  To use a protocol, just add an account using the
-account editor.
+protocols including AIM, Jabber, Bonjour, ICQ, IRC, Novell Groupwise,
+QQ, Lotus Sametime, Simple and Zephyr. These protocols are implemented
+using a modular, easy to use design. To use a protocol, just add an
+account using the account editor.
 
 Pidgin supports many common features of other clients, as well as many
 unique features, such as perl scripting, TCL scripting and C plugins.
 
 Pidgin is not affiliated with or endorsed by America Online, Inc.,
-Microsoft Corporation, Yahoo! Inc., or ICQ Inc.
+Microsoft Corporation, or ICQ Inc.
 
 %if %{split_evolution}
 %package evolution
@@ -395,9 +377,8 @@ Obsoletes:  pidgin-docs = 2.5.2
 libpurple contains the core IM support for IM clients such as Pidgin
 and Finch.
 
-libpurple supports a variety of messaging protocols including AIM, MSN,
-Yahoo!, Jabber, Bonjour, Gadu-Gadu, ICQ, IRC, Novell Groupwise, QQ,
-Lotus Sametime, SILC, Simple and Zephyr.
+libpurple supports a variety of messaging protocols including AIM, Jabber,
+Bonjour, ICQ, IRC, Novell Groupwise, QQ, Lotus Sametime, Simple and Zephyr.
 
 
 %package -n libpurple-devel
@@ -483,30 +464,18 @@ echo "FEDORA=%{fedora} RHEL=%{rhel}"
 %if %{force_sound_aplay}
 %patch0 -p1 -b .aplay
 %endif
-
-%patch1 -p1 -b .gadu-gadu
+%patch1 -p1
+%patch2 -p1 -b .gadu-gadu
+%patch3 -p1 -b .aim
 
 ## Patches 100+: To be Included in Future Upstream
 
-# http://pidgin.im/pipermail/devel/2011-November/010477.html
-%patch100 -p0 -R -b .ftcrash
-# https://developer.pidgin.im/ticket/15517
-%patch101 -p1 -b .irc-sasl
-
-%patch102 -p1 -b .CVE-2012-6152
-%patch103 -p1 -b .CVE-2013-6477
-%patch104 -p1 -b .CVE-2013-6478
-%patch105 -p1 -b .CVE-2013-6479
-%patch106 -p1 -b .CVE-2013-6481
-%patch107 -p1 -b .CVE-2013-6482
-%patch108 -p1 -b .CVE-2013-6483
-%patch109 -p1 -b .CVE-2013-6483-regression
-%patch110 -p1 -b .CVE-2013-6484
-%patch111 -p1 -b .CVE-2013-6485
-%patch112 -p1 -b .CVE-2013-6487
-%patch113 -p1 -b .CVE-2013-6489
-%patch114 -p1 -b .CVE-2013-6490
-%patch115 -p1 -b .CVE-2014-0020
+%patch100 -p1 -b .CVE-2017-2640
+%patch101 -p0 -R -b .ftcrash
+%patch102 -p1 -b .jabber-use-after-free
+%patch103 -p1 -b .Wsign-compare
+%patch104 -p1 -b .IRC-skip-EXTERNAL
+%patch105 -p1 -b .rework-tray-icon-blinking
 
 # Our preferences
 cp %{SOURCE1} prefs.xml
@@ -522,6 +491,12 @@ for file in finch/plugins/pietray.py libpurple/purple-remote libpurple/plugins/d
             libpurple/plugins/startup.py libpurple/purple-url-handler libpurple/purple-notifications-example; do
     sed -i 's/env python/python/' $file
 done
+
+# Bug #1141477
+%if 0%{?has_valgrind}
+rm -f libpurple/valgrind.h
+sed -ie 's/include "valgrind.h"/include <valgrind\/valgrind.h>/' libpurple/plugin.c
+%endif
 
 %build
 SWITCHES="--with-extraversion=%{release}"
@@ -571,7 +546,6 @@ SWITCHES="--with-extraversion=%{release}"
 export RPM_OPT_FLAGS=${RPM_OPT_FLAGS//-fstack-protector /-fstack-protector-all }
 export CFLAGS="$RPM_OPT_FLAGS"
 
-# remove after irc-sasl patch has been merged upstream
 autoreconf --force --install
 
 # gnutls is buggy so use mozilla-nss on all distributions
@@ -707,6 +681,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/applications/pidgin.desktop
 %{_datadir}/pixmaps/pidgin/
 %{_datadir}/icons/hicolor/*/apps/pidgin.*
+%{_datadir}/appdata/pidgin.appdata.xml
 %{_sysconfdir}/gconf/schemas/purple.schemas
 
 %if %{split_evolution}
@@ -796,6 +771,40 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue Oct 09 2018 Debarshi Ray <rishi@fedoraproject.org> - 2.10.11-8
+- Rework tray icon blinking
+- Unbreak connections to Freenode
+  Resolves: #1433761, #1440215
+
+* Thu Oct 12 2017 Debarshi Ray <rishi@fedoraproject.org> - 2.10.11-7
+- Drop AIM in RHEL
+  Resolves: #1500403
+
+* Fri Oct 06 2017 Debarshi Ray <rishi@fedoraproject.org> - 2.10.11-6
+- Drop MSN, MySpace and Yahoo! support in RHEL
+  Resolves: #1470677, #1470681, #1470685
+
+* Fri May 19 2017 Debarshi Ray <rishi@fedoraproject.org> - 2.10.11-5
+- Drop MXit support in RHEL
+  Resolves: #1439296
+
+* Thu Apr 27 2017 Debarshi Ray <rishi@fedoraproject.org> - 2.10.11-4
+- Silence -Wsign-compare
+- Rename the previous patch for consistency
+  Resolves: #1445921, #1446368
+
+* Wed Apr 26 2017 Debarshi Ray <rishi@fedoraproject.org> - 2.10.11-3
+- Avoid a use-after-free in an error path
+  Resolves: #1445921
+
+* Tue Mar 28 2017 Debarshi Ray <rishi@fedoraproject.org> - 2.10.11-2
+- Add patch for CVE-2017-2640
+  Resolves: #1431022
+
+* Thu Aug 25 2016 Debarshi Ray <rishi@fedoraproject.org> - 2.10.11-1
+- Update to 2.10.11
+  Resolves: #1369526
+
 * Thu Mar 24 2016 Debarshi Ray <rishi@fedoraproject.org> - 2.10.7-26
 - Bump release to be higher than the EPEL build
   Resolves: #1297461
@@ -1129,10 +1138,10 @@ rm -rf $RPM_BUILD_ROOT
 - Voice and Video support via farsight2 (Fedora 11+)
 - Numerous other bug fixes
 
-* Tue Aug 06 2009 Warren Togami <wtogami@redhat.com> 2.6.0-0.11.20090812
+* Thu Aug 06 2009 Warren Togami <wtogami@redhat.com> 2.6.0-0.11.20090812
 - new snapshot at the request of maiku
 
-* Tue Aug 06 2009 Warren Togami <wtogami@redhat.com> 2.6.0-0.10.20090806
+* Thu Aug 06 2009 Warren Togami <wtogami@redhat.com> 2.6.0-0.10.20090806
 - new snapshot - theoretically better sound quality in voice chat
 
 * Tue Aug 04 2009 Warren Togami <wtogami@redhat.com> 2.6.0-0.9.20090804

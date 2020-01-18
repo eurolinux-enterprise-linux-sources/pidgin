@@ -300,7 +300,7 @@ pidgin_toggle_sensitive_array(GtkWidget *w, GPtrArray *data)
 {
 	gboolean sensitivity;
 	gpointer element;
-	int i;
+	guint i;
 
 	for (i=0; i < data->len; i++) {
 		element = g_ptr_array_index(data,i);
@@ -712,6 +712,10 @@ create_protocols_menu(const char *default_proto_id)
 			if (pixbuf)
 				g_object_unref(pixbuf);
 
+			/* libpurple3 compatibility */
+			if (g_strcmp0(default_proto_id, "prpl-gtalk") == 0)
+				aop_menu->default_item = i;
+
 			gtalk_name = NULL;
 			i++;
 		}
@@ -730,6 +734,10 @@ create_protocols_menu(const char *default_proto_id)
 
 			if (pixbuf)
 				g_object_unref(pixbuf);
+
+			/* libpurple3 compatibility */
+			if (g_strcmp0(default_proto_id, "prpl-facebook-xmpp") == 0)
+				aop_menu->default_item = i;
 
 			facebook_name = NULL;
 			i++;
@@ -1306,7 +1314,7 @@ pidgin_menu_position_func_helper(GtkMenu *menu,
 
 	monitor_num = gdk_screen_get_monitor_at_point (screen, *x, *y);
 
-	push_in = FALSE;
+	*push_in = FALSE;
 
 	/*
 	 * The placement of popup menus horizontally works like this (with
@@ -1661,12 +1669,10 @@ pidgin_dnd_file_manage(GtkSelectionData *sd, PurpleAccount *account, const char 
 			const char *itemname = NULL;
 
 			const char * const *langs;
-			int i;
 			langs = g_get_language_names();
-			for (i = 0; langs[i]; i++) {
-				g_snprintf(key, sizeof(key), "Name[%s]", langs[i]);
+			if (langs[0]) {
+				g_snprintf(key, sizeof(key), "Name[%s]", langs[0]);
 				itemname = purple_desktop_item_get_string(item, key);
-				break;
 			}
 
 			if (!itemname)
@@ -3269,33 +3275,28 @@ copy_email_address(GtkIMHtml *imhtml, GtkIMHtmlLink *link, GtkWidget *menu)
 	return TRUE;
 }
 
+/**
+ * @param filename The path to a file. Specifically this is the link target
+ *        from a link in an IM window with the leading "file://" removed.
+ */
 static void
-file_open_uri(GtkIMHtml *imhtml, const char *uri)
+open_file(GtkIMHtml *imhtml, const char *filename)
 {
 	/* Copied from gtkft.c:open_button_cb */
 #ifdef _WIN32
 	/* If using Win32... */
 	int code;
-	if (purple_str_has_prefix(uri, "file://"))
-	{
-		gchar *escaped = g_shell_quote(uri);
-		gchar *param = g_strconcat("/select,\"", uri, "\"", NULL);
-		wchar_t *wc_param = g_utf8_to_utf16(param, -1, NULL, NULL, NULL);
+	/* Escape URI by replacing double-quote with 2 double-quotes. */
+	gchar *escaped = purple_strreplace(filename, "\"", "\"\"");
+	gchar *param = g_strconcat("/select,\"", escaped, "\"", NULL);
+	wchar_t *wc_param = g_utf8_to_utf16(param, -1, NULL, NULL, NULL);
 
-		code = (int)ShellExecuteW(NULL, L"OPEN", L"explorer.exe", wc_param, NULL, SW_NORMAL);
+	/* TODO: Better to use SHOpenFolderAndSelectItems()? */
+	code = (int)ShellExecuteW(NULL, L"OPEN", L"explorer.exe", wc_param, NULL, SW_NORMAL);
 
-		g_free(wc_param);
-		g_free(param);
-		g_free(escaped);
-	} else {
-		wchar_t *wc_filename = g_utf8_to_utf16(
-				uri, -1, NULL, NULL, NULL);
-
-		code = (int)ShellExecuteW(NULL, NULL, wc_filename, NULL, NULL,
-				SW_SHOW);
-
-		g_free(wc_filename);
-	}
+	g_free(wc_param);
+	g_free(param);
+	g_free(escaped);
 
 	if (code == SE_ERR_ASSOCINCOMPLETE || code == SE_ERR_NOASSOC)
 	{
@@ -3306,7 +3307,8 @@ file_open_uri(GtkIMHtml *imhtml, const char *uri)
 	{
 		purple_notify_error(imhtml, NULL,
 				_("An error occurred while opening the file."), NULL);
-		purple_debug_warning("gtkutils", "filename: %s; code: %d\n", uri, code);
+		purple_debug_warning("gtkutils", "filename: %s; code: %d\n",
+				filename, code);
 	}
 #else
 	char *command = NULL;
@@ -3315,15 +3317,15 @@ file_open_uri(GtkIMHtml *imhtml, const char *uri)
 
 	if (purple_running_gnome())
 	{
-		char *escaped = g_shell_quote(uri);
+		char *escaped = g_shell_quote(filename);
 		command = g_strdup_printf("gnome-open %s", escaped);
 		g_free(escaped);
 	}
 	else if (purple_running_kde())
 	{
-		char *escaped = g_shell_quote(uri);
+		char *escaped = g_shell_quote(filename);
 
-		if (purple_str_has_suffix(uri, ".desktop"))
+		if (purple_str_has_suffix(filename, ".desktop"))
 			command = g_strdup_printf("kfmclient openURL %s 'text/plain'", escaped);
 		else
 			command = g_strdup_printf("kfmclient openURL %s", escaped);
@@ -3331,7 +3333,7 @@ file_open_uri(GtkIMHtml *imhtml, const char *uri)
 	}
 	else
 	{
-		purple_notify_uri(NULL, uri);
+		purple_notify_uri(NULL, filename);
 		return;
 	}
 
@@ -3341,7 +3343,7 @@ file_open_uri(GtkIMHtml *imhtml, const char *uri)
 		if (!g_spawn_command_line_sync(command, NULL, NULL, &exit_status, &error))
 		{
 			tmp = g_strdup_printf(_("Error launching %s: %s"),
-							uri, error->message);
+							filename, error->message);
 			purple_notify_error(imhtml, NULL, _("Unable to open file."), tmp);
 			g_free(tmp);
 			g_error_free(error);
@@ -3362,8 +3364,9 @@ file_open_uri(GtkIMHtml *imhtml, const char *uri)
 static gboolean
 file_clicked_cb(GtkIMHtml *imhtml, GtkIMHtmlLink *link)
 {
-	const char *uri = gtk_imhtml_link_get_url(link) + FILELINKSIZE;
-	file_open_uri(imhtml, uri);
+	/* Strip "file://" from the URI. */
+	const char *filename = gtk_imhtml_link_get_url(link) + FILELINKSIZE;
+	open_file(imhtml, filename);
 	return TRUE;
 }
 
@@ -3371,7 +3374,7 @@ static gboolean
 open_containing_cb(GtkIMHtml *imhtml, const char *url)
 {
 	char *dir = g_path_get_dirname(url + FILELINKSIZE);
-	file_open_uri(imhtml, dir);
+	open_file(imhtml, dir);
 	g_free(dir);
 	return TRUE;
 }

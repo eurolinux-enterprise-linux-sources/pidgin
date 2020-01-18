@@ -603,15 +603,10 @@ void
 peer_connection_listen_cb(gpointer data, gint source, PurpleInputCondition cond)
 {
 	PeerConnection *conn;
-	OscarData *od;
-	PurpleConnection *gc;
 	struct sockaddr addr;
 	socklen_t addrlen = sizeof(addr);
-	int flags;
 
 	conn = data;
-	od = conn->od;
-	gc = od->gc;
 
 	purple_debug_info("oscar", "Accepting connection on listener socket.\n");
 
@@ -634,11 +629,7 @@ peer_connection_listen_cb(gpointer data, gint source, PurpleInputCondition cond)
 		return;
 	}
 
-	flags = fcntl(conn->fd, F_GETFL);
-	fcntl(conn->fd, F_SETFL, flags | O_NONBLOCK);
-#ifndef _WIN32
-	fcntl(conn->fd, F_SETFD, FD_CLOEXEC);
-#endif
+	_purple_network_set_common_socket_flags(conn->fd);
 
 	purple_input_remove(conn->watcher_incoming);
 

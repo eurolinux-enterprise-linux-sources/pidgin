@@ -222,9 +222,10 @@ pidgin_smiley_themes_remove_non_existing(void)
 
 void pidgin_themes_load_smiley_theme(const char *file, gboolean load)
 {
-	FILE *f = g_fopen(file, "r");
+	FILE *f = g_fopen(file, "rb");
 	char buf[256];
 	char *i;
+	gsize line_nbr = 0;
 	struct smiley_theme *theme=NULL;
 	struct smiley_list *list = NULL;
 	GSList *lst = smiley_themes;
@@ -260,6 +261,7 @@ void pidgin_themes_load_smiley_theme(const char *file, gboolean load)
 		if (!fgets(buf, sizeof(buf), f)) {
 			break;
 		}
+		line_nbr++;
 
 		if (buf[0] == '#' || buf[0] == '\0')
 			continue;
@@ -271,6 +273,11 @@ void pidgin_themes_load_smiley_theme(const char *file, gboolean load)
 				continue;
 		}
 
+		if (! g_utf8_validate(buf, -1, NULL)) {
+			purple_debug_error("gtkthemes", "%s:%" G_GSIZE_FORMAT " is invalid UTF-8\n", file, line_nbr);
+			continue;
+		}
+
 		i = buf;
 		while (isspace(*i))
 			i++;
@@ -278,7 +285,7 @@ void pidgin_themes_load_smiley_theme(const char *file, gboolean load)
 		if (*i == '[' && strchr(i, ']') && load) {
 			struct smiley_list *child = g_new0(struct smiley_list, 1);
 			child->sml = g_strndup(i+1, strchr(i, ']') - i - 1);
-			if (theme->list)
+			if (list)
 				list->next = child;
 			else
 				theme->list = child;
@@ -308,11 +315,18 @@ void pidgin_themes_load_smiley_theme(const char *file, gboolean load)
 			}
 			while  (*i) {
 				char l[64];
-				int li = 0;
+				size_t li = 0;
+				char *next;
 				while (*i && !isspace(*i) && li < sizeof(l) - 1) {
 					if (*i == '\\' && *(i+1) != '\0')
 						i++;
-					l[li++] = *(i++);
+					/* coverity[tainted_data] */
+					next = g_utf8_next_char(i);
+					if ((size_t)(next - i) > (sizeof(l) - li -1)) {
+						break;
+					}
+					while (i != next)
+						l[li++] = *(i++);
 				}
 				l[li] = 0;
 				if (!sfile) {
@@ -397,7 +411,10 @@ void pidgin_themes_smiley_theme_probe()
 			}
 			g_dir_close(dir);
 		} else if (l == 1) {
-			g_mkdir(probedirs[l], S_IRUSR | S_IWUSR | S_IXUSR);
+			if (g_mkdir(probedirs[l], S_IRUSR | S_IWUSR | S_IXUSR) != 0) {
+				purple_debug_error("gtkthemes",
+					"couldn't create smileys dir\n");
+			}
 		}
 		g_free(probedirs[l]);
 	}

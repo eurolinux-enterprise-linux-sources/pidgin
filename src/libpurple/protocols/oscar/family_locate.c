@@ -958,8 +958,7 @@ aim_info_extract(OscarData *od, ByteStream *bs, aim_userinfo_t *outinfo)
 			/*
 			 * My instance number.
 			 */
-			guint8 instance_number;
-			instance_number = byte_stream_get8(bs);
+			byte_stream_get8(bs);
 
 		} else if (type == 0x0019) {
 			/*
@@ -1355,7 +1354,7 @@ aim_locate_setcaps(OscarData *od, guint64 caps)
 	aim_snacid_t snacid;
 	GSList *tlvlist = NULL;
 
-	if (!od || !(conn = flap_connection_findbygroup(od, SNAC_FAMILY_LOCATE)))
+	if (!(conn = flap_connection_findbygroup(od, SNAC_FAMILY_LOCATE)))
 		return -EINVAL;
 
 	aim_tlvlist_add_caps(&tlvlist, 0x0005, caps, mood);

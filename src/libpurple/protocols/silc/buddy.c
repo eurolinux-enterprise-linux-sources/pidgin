@@ -750,7 +750,7 @@ silcpurple_add_buddy_save(SilcBool success, void *context)
 	char filename[512], filename2[512], *fingerprint = NULL, *tmp;
 	SilcUInt32 len;
 	SilcHash hash;
-	int i;
+	gsize i;
 
 	if (!success) {
 		/* The user did not trust the public key. */
@@ -922,7 +922,6 @@ silcpurple_add_buddy_save(SilcBool success, void *context)
 
 	if (usign_success || ssign_success) {
 		struct passwd *pw;
-		struct stat st;
 
 		memset(filename2, 0, sizeof(filename2));
 
@@ -937,14 +936,9 @@ silcpurple_add_buddy_save(SilcBool success, void *context)
 			return;
 
 		/* Create dir if it doesn't exist */
-		if ((g_stat(filename, &st)) == -1) {
-			if (errno == ENOENT) {
-				if (pw->pw_uid == geteuid()) {
-					int ret = g_mkdir(filename, 0755);
-					if (ret < 0)
-						return;
-					}
-			}
+		if (pw->pw_uid == geteuid()) {
+			if (g_mkdir(filename, 0755) != 0 && errno != EEXIST)
+				return;
 		}
 
 		/* Save VCard */
@@ -1546,13 +1540,10 @@ void silcpurple_tooltip_text(PurpleBuddy *b, PurpleNotifyUserInfo *user_info, gb
 	if (!client_entry)
 		return;
 
-	if (client_entry->nickname)
-		purple_notify_user_info_add_pair(user_info, _("Nickname"),
+	purple_notify_user_info_add_pair(user_info, _("Nickname"),
 					       client_entry->nickname);
-	if (client_entry->username && client_entry->hostname) {
-		g_snprintf(tmp, sizeof(tmp), "%s@%s", client_entry->username, client_entry->hostname);
-		purple_notify_user_info_add_pair(user_info, _("Username"), tmp);
-	}
+	g_snprintf(tmp, sizeof(tmp), "%s@%s", client_entry->username, client_entry->hostname);
+	purple_notify_user_info_add_pair(user_info, _("Username"), tmp);
 	if (client_entry->mode) {
 		memset(tmp, 0, sizeof(tmp));
 		silcpurple_get_umode_string(client_entry->mode,

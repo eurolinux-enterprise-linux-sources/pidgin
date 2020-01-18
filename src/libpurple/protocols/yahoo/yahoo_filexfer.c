@@ -412,7 +412,7 @@ static void yahoo_xfer_start(PurpleXfer *xfer)
 
 static guint calculate_length(const gchar *l, size_t len)
 {
-	int i;
+	size_t i;
 
 	for (i = 0; i < len; i++) {
 		if (!g_ascii_isdigit(l[i]))
@@ -740,7 +740,6 @@ void yahoo_process_p2pfilexfer(PurpleConnection *gc, struct yahoo_packet *pkt)
 	char *message = NULL;
 	char *command = NULL;
 	char *imv     = NULL;
-	char *unknown = NULL;
 
 	/* Get all the necessary values from this new packet */
 	while(l != NULL)
@@ -749,25 +748,54 @@ void yahoo_process_p2pfilexfer(PurpleConnection *gc, struct yahoo_packet *pkt)
 
 		switch(pair->key) {
 		case 5:         /* Get who the packet is for */
-			me = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				me = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_p2pfilexfer "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		case 4:         /* Get who the packet is from */
-			from = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				from = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_p2pfilexfer "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		case 49:        /* Get the type of service */
-			service = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				service = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_p2pfilexfer "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		case 14:        /* Get the 'message' of the packet */
-			message = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				message = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_p2pfilexfer "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		case 13:        /* Get the command associated with this packet */
-			command = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				command = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_p2pfilexfer "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		case 63:        /* IMVironment name and version */
-			imv = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				imv = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_p2pfilexfer "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		case 64:        /* Not sure, but it does vary with initialization of Doodle */
-			unknown = pair->value; /* So, I'll keep it (for a little while atleast) */
 			break;
 		}
 
@@ -793,11 +821,9 @@ void yahoo_process_p2pfilexfer(PurpleConnection *gc, struct yahoo_packet *pkt)
 void yahoo_process_filetransfer(PurpleConnection *gc, struct yahoo_packet *pkt)
 {
 	char *from = NULL;
-	char *to = NULL;
 	char *msg = NULL;
 	char *url = NULL;
 	char *imv = NULL;
-	long expires = 0;
 	PurpleXfer *xfer;
 	YahooData *yd;
 	struct yahoo_xfer_data *xfer_data;
@@ -813,19 +839,32 @@ void yahoo_process_filetransfer(PurpleConnection *gc, struct yahoo_packet *pkt)
 
 		switch (pair->key) {
 		case 4:
-			from = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				from = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_filetransfer "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
-		case 5:
-			to = pair->value;
+		case 5: /* to */
 			break;
 		case 14:
-			msg = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				msg = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_filetransfer "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		case 20:
-			url = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				url = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_filetransfer "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
-		case 38:
-			expires = strtol(pair->value, NULL, 10);
+		case 38: /* expires */
 			break;
 		case 27:
 			filename = pair->value;
@@ -834,10 +873,20 @@ void yahoo_process_filetransfer(PurpleConnection *gc, struct yahoo_packet *pkt)
 			filesize = atol(pair->value);
 			break;
 		case 49:
-			service = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				service = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_filetransfer "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		case 63:
-			imv = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				imv = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_filetransfer "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		}
 	}
@@ -1593,7 +1642,6 @@ static void yahoo_p2p_client_send_ft_info(PurpleConnection *gc, PurpleXfer *xfer
 void yahoo_process_filetrans_15(PurpleConnection *gc, struct yahoo_packet *pkt)
 {
 	char *from = NULL;
-	char *to = NULL;
 	char *imv = NULL;
 	long val_222 = 0L;
 	PurpleXfer *xfer;
@@ -1616,20 +1664,34 @@ void yahoo_process_filetrans_15(PurpleConnection *gc, struct yahoo_packet *pkt)
 
 		switch (pair->key) {
 		case 4:
-			from = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				from = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_filetrans_15 "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
-		case 5:
-			to = pair->value;
+		case 5: /* to */
 			break;
 		case 265:
-			xfer_peer_idstring = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				xfer_peer_idstring = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_filetrans_15 "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		case 27:
 			filename_list = g_slist_prepend(filename_list, g_strdup(pair->value));
 			nooffiles++;
 			break;
 		case 28:
-			size_list = g_slist_prepend(size_list, g_strdup(pair->value));
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				size_list = g_slist_prepend(size_list, g_strdup(pair->value));
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_filetrans_15 "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		case 222:
 			val_222 = atol(pair->value);
@@ -1638,10 +1700,20 @@ void yahoo_process_filetrans_15(PurpleConnection *gc, struct yahoo_packet *pkt)
 
 		/* check for p2p and imviron .... not sure it comes by this service packet. Since it was bundled with filexfer in old ymsg version, still keeping it. */
 		case 49:
-			service = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				service = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_filetrans_15 "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		case 63:
-			imv = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				imv = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_filetrans_15 "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		/* end check */
 
@@ -1775,15 +1847,12 @@ void yahoo_process_filetrans_15(PurpleConnection *gc, struct yahoo_packet *pkt)
 
 void yahoo_process_filetrans_info_15(PurpleConnection *gc, struct yahoo_packet *pkt)
 {
-	char *from = NULL;
-	char *to = NULL;
 	char *url = NULL;
 	long val_249 = 0;
 	long val_66 = 0;
 	PurpleXfer *xfer;
 	YahooData *yd;
 	struct yahoo_xfer_data *xfer_data;
-	char *filename = NULL;
 	char *xfer_peer_idstring = NULL;
 	char *xfer_idstring_for_relay = NULL;
 	GSList *l;
@@ -1796,17 +1865,19 @@ void yahoo_process_filetrans_info_15(PurpleConnection *gc, struct yahoo_packet *
 		struct yahoo_pair *pair = l->data;
 
 		switch (pair->key) {
-		case 4:
-			from = pair->value;
+		case 4: /* from */
 			break;
-		case 5:
-			to = pair->value;
+		case 5: /* to */
 			break;
 		case 265:
-			xfer_peer_idstring = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				xfer_peer_idstring = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_filetrans_info_15 "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
-		case 27:
-			filename = pair->value;
+		case 27: /* filename */
 			break;
 		case 66:
 			val_66 = strtol(pair->value, NULL, 10);
@@ -1816,10 +1887,20 @@ void yahoo_process_filetrans_info_15(PurpleConnection *gc, struct yahoo_packet *
 			/* 249 has value 1 or 2 when doing p2p transfer and value 3 when relaying through yahoo server */
 			break;
 		case 250:
-			url = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				url = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_filetrans_info_15 "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		case 251:
-			xfer_idstring_for_relay = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				xfer_idstring_for_relay = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_filetrans_info_15 "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		}
 	}
@@ -1902,10 +1983,20 @@ void yahoo_process_filetrans_acc_15(PurpleConnection *gc, struct yahoo_packet *p
 
 		switch (pair->key) {
 		case 251:
-			xfer_idstring_for_relay = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				xfer_idstring_for_relay = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_filetrans_acc_15 "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		case 265:
-			xfer_peer_idstring = pair->value;
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				xfer_peer_idstring = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_filetrans_acc_15 "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		case 66:
 			val_66 = atol(pair->value);
@@ -1914,7 +2005,13 @@ void yahoo_process_filetrans_acc_15(PurpleConnection *gc, struct yahoo_packet *p
 			val_249 = atol(pair->value);
 			break;
 		case 250:
-			url = pair->value;	/* we get a p2p url here when sending file, connected as client */
+			if (g_utf8_validate(pair->value, -1, NULL)) {
+				/* we get a p2p url here when sending file, connected as client */
+				url = pair->value;
+			} else {
+				purple_debug_warning("yahoo", "yahoo_process_filetrans_acc_15 "
+						"got non-UTF-8 string for key %d\n", pair->key);
+			}
 			break;
 		}
 	}
