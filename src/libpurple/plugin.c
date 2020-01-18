@@ -587,8 +587,11 @@ purple_plugin_load(PurplePlugin *plugin)
 
 	if (plugin->native_plugin)
 	{
-		if (plugin->info->load != NULL && !plugin->info->load(plugin))
-			return FALSE;
+		if (plugin->info != NULL && plugin->info->load != NULL)
+		{
+			if (!plugin->info->load(plugin))
+				return FALSE;
+		}
 	}
 	else {
 		PurplePlugin *loader;
@@ -1375,7 +1378,7 @@ purple_plugins_probe(const char *ext)
 				path = g_build_filename(search_path, file, NULL);
 
 				if (ext == NULL || has_file_extension(file, ext))
-					purple_plugin_probe(path);
+					plugin = purple_plugin_probe(path);
 
 				g_free(path);
 			}

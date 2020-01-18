@@ -729,10 +729,7 @@ theme_install_theme(char *path, struct theme_info *info)
 			g_rename(purple_theme_get_dir(theme), theme_dest);
 
 			g_free(theme_dest);
-			if (g_remove(destdir) != 0) {
-				purple_debug_error("gtkprefs",
-					"couldn't remove temp (dest) path\n");
-			}
+			g_remove(destdir);
 			g_object_unref(theme);
 
 			prefs_themes_refresh();
@@ -780,10 +777,7 @@ theme_install_theme(char *path, struct theme_info *info)
 
 				prefs_themes_refresh();
 			} else {
-				if (g_remove(temp_path) != 0) {
-					purple_debug_error("gtkprefs",
-						"couldn't remove temp path\n");
-				}
+				g_remove(temp_path);
 				purple_notify_error(NULL, NULL, _("Theme failed to load."), NULL);
 			}
 		} else {
@@ -2664,6 +2658,7 @@ away_page(void)
 	GtkWidget *dd;
 	GtkWidget *label;
 	GtkWidget *button;
+	GtkWidget *select;
 	GtkWidget *menu;
 	GtkSizeGroup *sg;
 
@@ -2686,7 +2681,7 @@ away_page(void)
 	gtk_size_group_add_widget(sg, dd);
 	gtk_misc_set_alignment(GTK_MISC(dd), 0, 0.5);
 
-	pidgin_prefs_labeled_spin_button(vbox,
+	select = pidgin_prefs_labeled_spin_button(vbox,
 			_("_Minutes before becoming idle:"), "/purple/away/mins_before_away",
 			1, 24 * 60, sg);
 

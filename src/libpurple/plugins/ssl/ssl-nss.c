@@ -29,23 +29,11 @@
 
 #define SSL_NSS_PLUGIN_ID "ssl-nss"
 
-#ifdef _WIN32
-# ifndef HAVE_LONG_LONG
-#define HAVE_LONG_LONG
-/* WINDDK_BUILD is defined because the checks around usage of
- * intrisic functions are wrong in nspr */
-#define WINDDK_BUILD
-# endif
-#else
-/* TODO: Why is this done?
- * This is probably being overridden by <nspr.h> (prcpucfg.h) on *nix OSes */
 #undef HAVE_LONG_LONG /* Make Mozilla less angry. If angry, Mozilla SMASH! */
-#endif
 
 #include <nspr.h>
 #include <nss.h>
 #include <nssb64.h>
-#include <ocsp.h>
 #include <pk11func.h>
 #include <prio.h>
 #include <secerr.h>
@@ -53,11 +41,6 @@
 #include <ssl.h>
 #include <sslerr.h>
 #include <sslproto.h>
-
-/* There's a bug in some versions of this header that requires that some of
-   the headers above be included first. This is true for at least libnss
-   3.15.4. */
-#include <certdb.h>
 
 /* This is defined in NSPR's <private/pprio.h>, but to avoid including a
  * private header we duplicate the prototype here */
@@ -139,157 +122,99 @@ static gchar *get_error_text(void)
 	return ret;
 }
 
-static const PRUint16 default_ciphers[] = {
-#if NSS_VMAJOR > 3 || ( NSS_VMAJOR == 3 && NSS_VMINOR > 15 ) \
-		|| ( NSS_VMAJOR == 3 && NSS_VMINOR == 15 && NSS_VPATCH >= 1 )
-	TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
-	TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,
-	TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,
-# if NSS_VMAJOR > 3 || ( NSS_VMAJOR == 3 && NSS_VMINOR > 15 ) \
-		|| ( NSS_VMAJOR == 3 && NSS_VMINOR == 15 && NSS_VPATCH >= 2 )
-	TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-	TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
-	TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-# endif
-#endif
-	TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-	TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-
-	TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-	TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-
-	TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
-
-	TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
-
-	TLS_DHE_DSS_WITH_AES_128_CBC_SHA, /* deprecated (DSS) */
-	/* TLS_DHE_DSS_WITH_AES_256_CBC_SHA, false }, // deprecated (DSS) */
-
-	TLS_ECDHE_RSA_WITH_RC4_128_SHA,		/* deprecated (RC4) */
-	TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, 	/* deprecated (RC4) */
-
-	/* RFC 6120 Mandatory */
-	TLS_RSA_WITH_AES_128_CBC_SHA,		/* deprecated (RSA key exchange) */
-	TLS_RSA_WITH_AES_256_CBC_SHA,		/* deprecated (RSA key exchange) */
-	/* TLS_RSA_WITH_3DES_EDE_CBC_SHA, 	 deprecated (RSA key exchange, 3DES) */
-
-	0 /* end marker */
-};
-
-/* It's unfortunate we need to manage these manually,
- * ideally NSS would choose good defaults.
- * This is mostly based on FireFox's list:
- * https://hg.mozilla.org/mozilla-central/log/default/security/manager/ssl/src/nsNSSComponent.cpp */
-static void ssl_nss_init_ciphers(void) {
-	/* Disable any ciphers that NSS might have enabled by default */
-	const PRUint16 *cipher;
-	for (cipher = SSL_GetImplementedCiphers(); *cipher != 0; ++cipher) {
-		SSL_CipherPrefSetDefault(*cipher, PR_FALSE);
-	}
-
-	/* Now only set SSL/TLS ciphers we knew about at compile time */
-	for (cipher = default_ciphers; *cipher != 0; ++cipher) {
-		SSL_CipherPrefSetDefault(*cipher, PR_TRUE);
-	}
-
-	/* Now log the available and enabled Ciphers */
-	for (cipher = SSL_GetImplementedCiphers(); *cipher != 0; ++cipher) {
-		const PRUint16 suite = *cipher;
-		SECStatus rv;
-		PRBool enabled;
-		SSLCipherSuiteInfo info;
-
-		rv = SSL_CipherPrefGetDefault(suite, &enabled);
-		if (rv != SECSuccess) {
-			gchar *error_txt = get_error_text();
-			purple_debug_warning("nss",
-					"SSL_CipherPrefGetDefault didn't like value 0x%04x: %s\n",
-					suite, error_txt);
-			g_free(error_txt);
-			continue;
-		}
-		rv = SSL_GetCipherSuiteInfo(suite, &info, (int)(sizeof info));
-		if (rv != SECSuccess) {
-			gchar *error_txt = get_error_text();
-			purple_debug_warning("nss",
-					"SSL_GetCipherSuiteInfo didn't like value 0x%04x: %s\n",
-					suite, error_txt);
-			g_free(error_txt);
-			continue;
-		}
-		purple_debug_info("nss", "Cipher - %s: %s\n",
-				info.cipherSuiteName,
-				enabled ? "Enabled" : "Disabled");
-	}
-}
-
 static void
 ssl_nss_init_nss(void)
 {
-#if NSS_VMAJOR > 3 || ( NSS_VMAJOR == 3 && NSS_VMINOR >= 14 )
-	SSLVersionRange supported, enabled;
-#endif /* NSS >= 3.14 */
-
 	PR_Init(PR_SYSTEM_THREAD, PR_PRIORITY_NORMAL, 1);
 	NSS_NoDB_Init(".");
-#if (NSS_VMAJOR == 3 && (NSS_VMINOR < 15 || (NSS_VMINOR == 15 && NSS_VPATCH < 2)))
 	NSS_SetDomesticPolicy();
-#endif /* NSS < 3.15.2 */
 
-	ssl_nss_init_ciphers();
-
-#if NSS_VMAJOR > 3 || ( NSS_VMAJOR == 3 && NSS_VMINOR >= 14 )
-	/* Get the ranges of supported and enabled SSL versions */
-	if ((SSL_VersionRangeGetSupported(ssl_variant_stream, &supported) == SECSuccess) &&
-			(SSL_VersionRangeGetDefault(ssl_variant_stream, &enabled) == SECSuccess)) {
-		purple_debug_info("nss", "TLS supported versions: "
-				"0x%04hx through 0x%04hx\n", supported.min, supported.max);
-		purple_debug_info("nss", "TLS versions allowed by default: "
-				"0x%04hx through 0x%04hx\n", enabled.min, enabled.max);
-
-		/* Make sure all versions of TLS supported by the local library are
-		   enabled. (For some reason NSS doesn't enable newer versions of TLS
-		   by default -- more context in ticket #15909.) */
-		if (supported.max > enabled.max) {
-			enabled.max = supported.max;
-			if (SSL_VersionRangeSetDefault(ssl_variant_stream, &enabled) == SECSuccess) {
-				purple_debug_info("nss", "Changed allowed TLS versions to "
-						"0x%04hx through 0x%04hx\n", enabled.min, enabled.max);
-			} else {
-				purple_debug_error("nss", "Error setting allowed TLS versions to "
-						"0x%04hx through 0x%04hx\n", enabled.min, enabled.max);
-			}
-		}
-	}
-#endif /* NSS >= 3.14 */
-
-	/** Disable OCSP Checking until we can make that use our HTTP & Proxy stuff */
-	CERT_EnableOCSPChecking(PR_FALSE);
+	SSL_CipherPrefSetDefault(TLS_DHE_RSA_WITH_AES_256_CBC_SHA, 1);
+	SSL_CipherPrefSetDefault(TLS_DHE_DSS_WITH_AES_256_CBC_SHA, 1);
+	SSL_CipherPrefSetDefault(TLS_RSA_WITH_AES_256_CBC_SHA, 1);
+	SSL_CipherPrefSetDefault(TLS_DHE_DSS_WITH_RC4_128_SHA, 1);
+	SSL_CipherPrefSetDefault(TLS_DHE_RSA_WITH_AES_128_CBC_SHA, 1);
+	SSL_CipherPrefSetDefault(TLS_DHE_DSS_WITH_AES_128_CBC_SHA, 1);
+	SSL_CipherPrefSetDefault(SSL_RSA_WITH_RC4_128_SHA, 1);
+	SSL_CipherPrefSetDefault(TLS_RSA_WITH_AES_128_CBC_SHA, 1);
+	SSL_CipherPrefSetDefault(SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA, 1);
+	SSL_CipherPrefSetDefault(SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA, 1);
+	SSL_CipherPrefSetDefault(SSL_DHE_RSA_WITH_DES_CBC_SHA, 1);
+	SSL_CipherPrefSetDefault(SSL_DHE_DSS_WITH_DES_CBC_SHA, 1);
 
 	_identity = PR_GetUniqueIdentity("Purple");
 	_nss_methods = PR_GetDefaultIOMethods();
-
 }
 
 static SECStatus
-ssl_auth_cert(void *arg, PRFileDesc *socket, PRBool checksig, PRBool is_server)
+ssl_auth_cert(void *arg, PRFileDesc *socket, PRBool checksig,
+			  PRBool is_server)
 {
-	/* We just skip cert verification here, and will verify the whole chain
-	 * in ssl_nss_handshake_cb, after the handshake is complete.
-	 *
-	 * The problem is, purple_certificate_verify is asynchronous and
-	 * ssl_auth_cert should return the result synchronously (it may ask the
-	 * user, if an unknown certificate should be trusted or not).
-	 *
-	 * Ideally, SSL_AuthCertificateHook/ssl_auth_cert should decide
-	 * immediately, if the certificate chain is already trusted and possibly
-	 * SSL_BadCertHook to deal with unknown certificates.
-	 *
-	 * Current implementation may not be ideal, but is no less secure in
-	 * terms of MITM attack.
-	 */
 	return SECSuccess;
+
+#if 0
+	CERTCertificate *cert;
+	void *pinArg;
+	SECStatus status;
+
+	cert = SSL_PeerCertificate(socket);
+	pinArg = SSL_RevealPinArg(socket);
+
+	status = CERT_VerifyCertNow((CERTCertDBHandle *)arg, cert, checksig,
+								certUsageSSLClient, pinArg);
+
+	if (status != SECSuccess) {
+		purple_debug_error("nss", "CERT_VerifyCertNow failed\n");
+		CERT_DestroyCertificate(cert);
+		return status;
+	}
+
+	CERT_DestroyCertificate(cert);
+	return SECSuccess;
+#endif
 }
+
+#if 0
+static SECStatus
+ssl_bad_cert(void *arg, PRFileDesc *socket)
+{
+	SECStatus status = SECFailure;
+	PRErrorCode err;
+
+	if (arg == NULL)
+		return status;
+
+	*(PRErrorCode *)arg = err = PORT_GetError();
+
+	switch (err)
+	{
+		case SEC_ERROR_INVALID_AVA:
+		case SEC_ERROR_INVALID_TIME:
+		case SEC_ERROR_BAD_SIGNATURE:
+		case SEC_ERROR_EXPIRED_CERTIFICATE:
+		case SEC_ERROR_UNKNOWN_ISSUER:
+		case SEC_ERROR_UNTRUSTED_CERT:
+		case SEC_ERROR_CERT_VALID:
+		case SEC_ERROR_EXPIRED_ISSUER_CERTIFICATE:
+		case SEC_ERROR_CRL_EXPIRED:
+		case SEC_ERROR_CRL_BAD_SIGNATURE:
+		case SEC_ERROR_EXTENSION_VALUE_INVALID:
+		case SEC_ERROR_CA_CERT_INVALID:
+		case SEC_ERROR_CERT_USAGES_INVALID:
+		case SEC_ERROR_UNKNOWN_CRITICAL_EXTENSION:
+			status = SECSuccess;
+			break;
+
+		default:
+			status = SECFailure;
+			break;
+	}
+
+	purple_debug_error("nss", "Bad certificate: %d\n", err);
+
+	return status;
+}
+#endif
 
 static gboolean
 ssl_nss_init(void)
@@ -383,46 +308,6 @@ ssl_nss_get_peer_certificates(PRFileDesc *socket, PurpleSslConnection * gsc)
 	return peer_certs;
 }
 
-/*
- * Ideally this information would be exposed to the UI somehow, but for now we
- * just print it to the debug log
- */
-static void
-print_security_info(PRFileDesc *fd)
-{
-	SECStatus result;
-	SSLChannelInfo channel;
-	SSLCipherSuiteInfo suite;
-
-	result = SSL_GetChannelInfo(fd, &channel, sizeof channel);
-	if (result == SECSuccess && channel.length == sizeof channel
-			&& channel.cipherSuite) {
-		result = SSL_GetCipherSuiteInfo(channel.cipherSuite,
-				&suite, sizeof suite);
-
-		if (result == SECSuccess) {
-			purple_debug_info("nss", "SSL version %d.%d using "
-					"%d-bit %s with %d-bit %s MAC\n"
-					"Server Auth: %d-bit %s, "
-					"Key Exchange: %d-bit %s, "
-					"Compression: %s\n"
-					"Cipher Suite Name: %s\n",
-					channel.protocolVersion >> 8,
-					channel.protocolVersion & 0xff,
-					suite.effectiveKeyBits,
-					suite.symCipherName,
-					suite.macBits,
-					suite.macAlgorithmName,
-					channel.authKeyBits,
-					suite.authAlgorithmName,
-					channel.keaKeyBits, suite.keaTypeName,
-					channel.compressionMethodName,
-					suite.cipherSuiteName);
-		}
-	}
-}
-
-
 static void
 ssl_nss_handshake_cb(gpointer data, int fd, PurpleInputCondition cond)
 {
@@ -450,8 +335,6 @@ ssl_nss_handshake_cb(gpointer data, int fd, PurpleInputCondition cond)
 		return;
 	}
 
-	print_security_info(nss_data->in);
-
 	purple_input_remove(nss_data->handshake_handler);
 	nss_data->handshake_handler = 0;
 
@@ -471,10 +354,7 @@ ssl_nss_handshake_cb(gpointer data, int fd, PurpleInputCondition cond)
 		purple_certificate_destroy_list(peers);
 	} else {
 		/* Otherwise, just call the "connection complete"
-		 * callback. The verification was already done with
-		 * SSL_AuthCertificate, the default verifier
-		 * (SSL_AuthCertificateHook was not called in ssl_nss_connect).
-		 */
+		   callback */
 		gsc->connect_cb(gsc->connect_cb_data, gsc, cond);
 	}
 }
@@ -539,10 +419,13 @@ ssl_nss_connect(PurpleSslConnection *gsc)
 	SSL_OptionSet(nss_data->in, SSL_SECURITY,            PR_TRUE);
 	SSL_OptionSet(nss_data->in, SSL_HANDSHAKE_AS_CLIENT, PR_TRUE);
 
-	/* If we have our internal verifier set up, use it. Otherwise,
-	 * use default. */
-	if (gsc->verifier != NULL)
-		SSL_AuthCertificateHook(nss_data->in, ssl_auth_cert, NULL);
+	SSL_AuthCertificateHook(nss_data->in,
+							(SSLAuthCertificate)ssl_auth_cert,
+							(void *)CERT_GetDefaultCertDB());
+#if 0
+	/* No point in hooking BadCert, since ssl_auth_cert always succeeds */
+	SSL_BadCertHook(nss_data->in, (SSLBadCertHandler)ssl_bad_cert, NULL);
+#endif
 
 	if(gsc->host)
 		SSL_SetURL(nss_data->in, gsc->host);
@@ -590,7 +473,7 @@ ssl_nss_close(PurpleSslConnection *gsc)
 static size_t
 ssl_nss_read(PurpleSslConnection *gsc, void *data, size_t len)
 {
-	PRInt32 ret;
+	ssize_t ret;
 	PurpleSslNssData *nss_data = PURPLE_SSL_NSS_DATA(gsc);
 
 	ret = PR_Read(nss_data->in, data, len);
@@ -604,7 +487,7 @@ ssl_nss_read(PurpleSslConnection *gsc, void *data, size_t len)
 static size_t
 ssl_nss_write(PurpleSslConnection *gsc, const void *data, size_t len)
 {
-	PRInt32 ret;
+	ssize_t ret;
 	PurpleSslNssData *nss_data = PURPLE_SSL_NSS_DATA(gsc);
 
 	if(!nss_data)
@@ -873,7 +756,7 @@ x509_signed_by(PurpleCertificate * crt,
 	subjectCert = X509_NSS_DATA(crt);
 	g_return_val_if_fail(subjectCert, FALSE);
 
-	if (subjectCert->issuerName == NULL || issuerCert->subjectName == NULL
+	if (subjectCert->issuerName == NULL
 			|| PORT_Strcmp(subjectCert->issuerName, issuerCert->subjectName) != 0)
 		return FALSE;
 	st = CERT_VerifySignedData(&subjectCert->signatureWrap, issuerCert, PR_Now(), NULL);
@@ -1027,171 +910,14 @@ x509_times (PurpleCertificate *crt, time_t *activation, time_t *expiration)
 	/* NSS's native PRTime type *almost* corresponds to time_t; however,
 	   it measures *microseconds* since the epoch, not seconds. Hence
 	   the funny conversion. */
-	nss_activ = nss_activ / 1000000;
-	nss_expir = nss_expir / 1000000;
-
 	if (activation) {
-		*activation = nss_activ;
-#if SIZEOF_TIME_T == 4
-		/** Hack to deal with dates past the 32-bit barrier.
-		    Handling is different for signed vs unsigned 32-bit types.
-		 */
-		if (*activation != nss_activ) {
-			if (nss_activ < 0) {
-				purple_debug_warning("nss",
-					"Setting Activation Date to epoch to handle pre-epoch value\n");
-				*activation = 0;
-			} else {
-				purple_debug_error("nss",
-					"Activation date past 32-bit barrier, forcing invalidity\n");
-				return FALSE;
-			}
-		}
-#endif
+		*activation = nss_activ / 1000000;
 	}
 	if (expiration) {
-		*expiration = nss_expir;
-#if SIZEOF_TIME_T == 4
-		if (*expiration != nss_expir) {
-			if (*expiration < nss_expir) {
-				if (*expiration < 0) {
-					purple_debug_warning("nss",
-						"Setting Expiration Date to 32-bit signed max\n");
-					*expiration = PR_INT32_MAX;
-				} else {
-					purple_debug_warning("nss",
-						"Setting Expiration Date to 32-bit unsigned max\n");
-					*expiration = PR_UINT32_MAX;
-				}
-			} else {
-				purple_debug_error("nss",
-					"Expiration date prior to unix epoch, forcing invalidity\n");
-				return FALSE;
-			}
-		}
-#endif
+		*expiration = nss_expir / 1000000;
 	}
 
 	return TRUE;
-}
-
-static gboolean
-x509_register_trusted_tls_cert(PurpleCertificate *crt, gboolean ca)
-{
-	CERTCertDBHandle *certdb = CERT_GetDefaultCertDB();
-	CERTCertificate *crt_dat;
-	CERTCertTrust trust;
-
-	g_return_val_if_fail(crt, FALSE);
-	g_return_val_if_fail(crt->scheme == &x509_nss, FALSE);
-
-	crt_dat = X509_NSS_DATA(crt);
-	g_return_val_if_fail(crt_dat, FALSE);
-
-	purple_debug_info("nss", "Trusting %s\n", crt_dat->subjectName);
-
-	if (ca && !CERT_IsCACert(crt_dat, NULL)) {
-		purple_debug_error("nss",
-			"Refusing to set non-CA cert as trusted CA\n");
-		return FALSE;
-	}
-
-	if (crt_dat->isperm) {
-		purple_debug_info("nss",
-			"Skipping setting trust for cert in permanent DB\n");
-		return TRUE;
-	}
-
-	if (ca) {
-		trust.sslFlags = CERTDB_TRUSTED_CA | CERTDB_TRUSTED_CLIENT_CA;
-	} else {
-		trust.sslFlags = CERTDB_TRUSTED;
-	}
-	trust.emailFlags = 0;
-	trust.objectSigningFlags = 0;
-
-	CERT_ChangeCertTrust(certdb, crt_dat, &trust);
-
-	return TRUE;
-}
-
-static void x509_verify_cert(PurpleCertificateVerificationRequest *vrq, PurpleCertificateInvalidityFlags *flags)
-{
-	CERTCertDBHandle *certdb = CERT_GetDefaultCertDB();
-	CERTCertificate *crt_dat;
-	PRTime now = PR_Now();
-	SECStatus rv;
-	PurpleCertificate *first_cert = vrq->cert_chain->data;
-	CERTVerifyLog log;
-	gboolean self_signed = FALSE;
-
-	crt_dat = X509_NSS_DATA(first_cert);
-
-	log.arena = PORT_NewArena(512);
-	log.head = log.tail = NULL;
-	log.count = 0;
-	rv = CERT_VerifyCert(certdb, crt_dat, PR_TRUE, certUsageSSLServer, now, NULL, &log);
-
-	if (rv != SECSuccess || log.count > 0) {
-		CERTVerifyLogNode *node   = NULL;
-		unsigned int depth = (unsigned int)-1;
-
-		if (crt_dat->isRoot) {
-			self_signed = TRUE;
-			*flags |= PURPLE_CERTIFICATE_SELF_SIGNED;
-		}
-
-		/* Handling of untrusted, etc. modeled after
-		 * source/security/manager/ssl/src/TransportSecurityInfo.cpp in Firefox
-		 */
-		for (node = log.head; node; node = node->next) {
-			if (depth != node->depth) {
-				depth = node->depth;
-				purple_debug_error("nss", "CERT %d. %s %s:\n", depth,
-					node->cert->subjectName,
-					depth ? "[Certificate Authority]": "");
-			}
-			purple_debug_error("nss", "  ERROR %ld: %s\n", node->error,
-				PR_ErrorToName(node->error));
-			switch (node->error) {
-				case SEC_ERROR_EXPIRED_CERTIFICATE:
-					*flags |= PURPLE_CERTIFICATE_EXPIRED;
-					break;
-				case SEC_ERROR_REVOKED_CERTIFICATE:
-					*flags |= PURPLE_CERTIFICATE_REVOKED;
-					break;
-				case SEC_ERROR_UNKNOWN_ISSUER:
-				case SEC_ERROR_UNTRUSTED_ISSUER:
-					if (!self_signed) {
-						*flags |= PURPLE_CERTIFICATE_CA_UNKNOWN;
-					}
-					break;
-				case SEC_ERROR_CA_CERT_INVALID:
-				case SEC_ERROR_EXPIRED_ISSUER_CERTIFICATE:
-				case SEC_ERROR_UNTRUSTED_CERT:
-#ifdef SEC_ERROR_CERT_SIGNATURE_ALGORITHM_DISABLED
-				case SEC_ERROR_CERT_SIGNATURE_ALGORITHM_DISABLED:
-#endif
-					if (!self_signed) {
-						*flags |= PURPLE_CERTIFICATE_INVALID_CHAIN;
-					}
-					break;
-				case SEC_ERROR_BAD_SIGNATURE:
-				default:
-					*flags |= PURPLE_CERTIFICATE_INVALID_CHAIN;
-			}
-			if (node->cert)
-				CERT_DestroyCertificate(node->cert);
-		}
-	}
-
-	rv = CERT_VerifyCertName(crt_dat, vrq->subject_name);
-	if (rv != SECSuccess) {
-		purple_debug_error("nss", "subject name not verified\n");
-		*flags |= PURPLE_CERTIFICATE_NAME_MISMATCH;
-	}
-
-	PORT_FreeArena(log.arena, PR_FALSE);
 }
 
 static PurpleCertificateScheme x509_nss = {
@@ -1209,8 +935,9 @@ static PurpleCertificateScheme x509_nss = {
 	x509_check_name,                 /* Check subject name */
 	x509_times,                      /* Activation/Expiration time */
 	x509_importcerts_from_file,      /* Multiple certificate import function */
-	x509_register_trusted_tls_cert,  /* Register a certificate as trusted for TLS */
-	x509_verify_cert,                /* Verify that the specified cert chain is trusted */
+
+	NULL,
+	NULL,
 	NULL
 };
 

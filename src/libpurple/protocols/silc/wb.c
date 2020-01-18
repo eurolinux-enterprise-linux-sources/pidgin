@@ -105,9 +105,11 @@ typedef struct {
 
 PurpleWhiteboard *silcpurple_wb_init(SilcPurple sg, SilcClientEntry client_entry)
 {
+        SilcClientConnection conn;
 	PurpleWhiteboard *wb;
 	SilcPurpleWb wbs;
 
+	conn = sg->conn;
 	wb = purple_whiteboard_get_session(sg->account, client_entry->nickname);
 	if (!wb)
 		wb = purple_whiteboard_create(sg->account, client_entry->nickname, 0);
@@ -190,7 +192,7 @@ silcpurple_wb_parse(SilcPurpleWb wbs, PurpleWhiteboard *wb,
 
 	/* Update whiteboard if its dimensions changed */
 	if (width != wbs->width || height != wbs->height)
-		silcpurple_wb_set_dimensions(wb, width, height);
+		silcpurple_wb_set_dimensions(wb, height, width);
 
 	if (command == SILCPURPLE_WB_DRAW) {
 		/* Parse data and draw it */

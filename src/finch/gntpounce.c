@@ -801,8 +801,10 @@ pounce_cb(PurplePounce *pounce, PurplePounceEvent events, void *data)
 
 	if (purple_pounce_action_is_enabled(pounce, "open-window"))
 	{
-		if (!purple_find_conversation_with_account(PURPLE_CONV_TYPE_IM, pouncee, account))
-			purple_conversation_new(PURPLE_CONV_TYPE_IM, account, pouncee);
+		conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_IM, pouncee, account);
+
+		if (conv == NULL)
+			conv = purple_conversation_new(PURPLE_CONV_TYPE_IM, account, pouncee);
 	}
 
 	if (purple_pounce_action_is_enabled(pounce, "popup-notify"))

@@ -114,7 +114,7 @@ static char *get_file_full_path(const char *filename);
 
 static PurpleSmiley *purple_smiley_create(const char *shortcut);
 
-static void purple_smiley_load_file(const char *shortcut, const char *checksum,
+static PurpleSmiley *purple_smiley_load_file(const char *shortcut, const char *checksum,
 		const char *filename);
 
 static void
@@ -227,9 +227,10 @@ purple_smileys_save(void)
  * Reading from disk                                                 *
  *********************************************************************/
 
-static void
+static PurpleSmiley *
 parse_smiley(xmlnode *smiley_node)
 {
+	PurpleSmiley *smiley;
 	const char *shortcut = NULL;
 	const char *checksum = NULL;
 	const char *filename = NULL;
@@ -239,9 +240,11 @@ parse_smiley(xmlnode *smiley_node)
 	filename = xmlnode_get_attrib(smiley_node, XML_FILENAME_ATRIB_TAG);
 
 	if ((shortcut == NULL) || (checksum == NULL) || (filename == NULL))
-		return;
+		return NULL;
 
-	purple_smiley_load_file(shortcut, checksum, filename);
+	smiley = purple_smiley_load_file(shortcut, checksum, filename);
+
+	return smiley;
 }
 
 static void
@@ -269,7 +272,9 @@ purple_smileys_load(void)
 		smiley_node = xmlnode_get_child(smileyset_node, XML_SMILEY_TAG);
 		for (; smiley_node != NULL;
 				smiley_node = xmlnode_get_next_twin(smiley_node)) {
-			parse_smiley(smiley_node);
+			PurpleSmiley *smiley;
+
+			smiley = parse_smiley(smiley_node);
 		}
 	}
 
@@ -468,7 +473,7 @@ static char *get_file_full_path(const char *filename)
 	return path;
 }
 
-static void
+static PurpleSmiley *
 purple_smiley_load_file(const char *shortcut, const char *checksum, const char *filename)
 {
 	PurpleSmiley *smiley = NULL;
@@ -476,20 +481,18 @@ purple_smiley_load_file(const char *shortcut, const char *checksum, const char *
 	size_t smiley_data_len;
 	char *fullpath = NULL;
 
-	g_return_if_fail(shortcut  != NULL);
-	g_return_if_fail(checksum  != NULL);
-	g_return_if_fail(filename != NULL);
+	g_return_val_if_fail(shortcut  != NULL, NULL);
+	g_return_val_if_fail(checksum  != NULL, NULL);
+	g_return_val_if_fail(filename != NULL, NULL);
 
 	fullpath = get_file_full_path(filename);
-	if (!fullpath) {
-		purple_debug_error(SMILEYS_LOG_ID, "Path for filename %s doesn't exist\n", filename);
-		return;
-	}
+	if (!fullpath)
+		return NULL;
 
 	smiley = purple_smiley_create(shortcut);
 	if (!smiley) {
 		g_free(fullpath);
-		return;
+		return NULL;
 	}
 
 	smiley->checksum = g_strdup(checksum);
@@ -502,6 +505,7 @@ purple_smiley_load_file(const char *shortcut, const char *checksum, const char *
 
 	g_free(fullpath);
 
+	return smiley;
 }
 
 static void

@@ -636,7 +636,7 @@ make_info_table(PidginXferDialog *dialog)
 {
 	GtkWidget *table;
 	GtkWidget *label;
-	gsize i;
+	int i;
 
 	struct
 	{

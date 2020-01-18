@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
 	GList *iter;
 	int i, num;
 	GList *names = NULL;
-	const char *prpl = NULL;
+	const char *prpl;
 	char name[128];
 	char *password;
 	GMainLoop *loop = g_main_loop_new(NULL, FALSE);
@@ -289,12 +289,8 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Failed to gets protocol selection.");
 		abort();
 	}
-	if (sscanf(name, "%d", &num) == 1)
-		prpl = g_list_nth_data(names, num);
-	if (!prpl) {
-		fprintf(stderr, "Failed to gets protocol.");
-		abort();
-	}
+	sscanf(name, "%d", &num);
+	prpl = g_list_nth_data(names, num);
 
 	printf("Username: ");
 	res = fgets(name, sizeof(name), stdin);

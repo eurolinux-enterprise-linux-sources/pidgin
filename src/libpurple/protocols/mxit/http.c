@@ -23,8 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include	"internal.h"
-#include	"debug.h"
+#include    "internal.h"
+#include	"purple.h"
 
 #include	"mxit.h"
 #include	"protocol.h"
@@ -104,9 +104,7 @@ static void mxit_cb_http_read( gpointer user_data, gint source, PurpleInputCondi
 	int					len;
 	char*				tmp;
 	int					res;
-#if 0
 	char*				next;
-#endif
 
 	purple_debug_info( MXIT_PLUGIN_ID, "mxit_cb_http_read\n" );
 
@@ -125,9 +123,7 @@ static void mxit_cb_http_read( gpointer user_data, gint source, PurpleInputCondi
 		}
 		buf[buflen+len] = '\0';
 
-#if 0
-nextpacket:
-#endif
+//nextpacket:
 
 #ifdef	DEBUG_HTTP
 		purple_debug_info( MXIT_PLUGIN_ID, "HTTP POST READ 1: (%i)\n", len );
@@ -192,9 +188,7 @@ nextpacket:
 		}
 		else if ( buflen > ( ( body - buf ) + bodylen ) ) {
 			/* we have a second packet here */
-#if 0
 			next = body + bodylen;
-#endif
 			session->rx_res = 0;
 		}
 		else {
@@ -334,8 +328,5 @@ void mxit_http_send_request( struct MXitSession* session, char* host, int port, 
 
 	/* open connection to the HTTP server */
 	con = purple_proxy_connect( NULL, session->acc, host, port, mxit_cb_http_connect, req );
-	if ( !con ) {
-		purple_connection_error_reason( session->con, PURPLE_CONNECTION_ERROR_NETWORK_ERROR, _( "Unable to connect" ) );
-	}
 }
 

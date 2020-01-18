@@ -104,18 +104,20 @@ void yahoo_doodle_initiate(PurpleConnection *gc, const char *name)
 {
 	PurpleAccount *account;
 	char *to = (char*)name;
+	PurpleWhiteboard *wb;
 
 	g_return_if_fail(gc);
 	g_return_if_fail(name);
 
 	account = purple_connection_get_account(gc);
+	wb = purple_whiteboard_get_session(account, to);
 
-	if(purple_whiteboard_get_session(account, to) == NULL)
+	if(wb == NULL)
 	{
 		/* Insert this 'session' in the list.  At this point, it's only a
 		 * requested session.
 		 */
-		purple_whiteboard_create(account, to, DOODLE_STATE_REQUESTING);
+		wb = purple_whiteboard_create(account, to, DOODLE_STATE_REQUESTING);
 	}
 
 	/* NOTE Perhaps some careful handling of remote assumed established

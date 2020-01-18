@@ -10,7 +10,8 @@ libpurple_ciphers_la_SOURCES=\
 	sha1.c \
 	sha256.c
 
+INCLUDES = -I$(top_srcdir)/libpurple
+
 AM_CPPFLAGS = \
-	-I$(top_srcdir)/libpurple \
 	$(GLIB_CFLAGS)
 

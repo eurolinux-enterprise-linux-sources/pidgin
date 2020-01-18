@@ -86,8 +86,7 @@ static void ice_connection_watch(IceConn connection, IcePointer client_data,
 				   "Handling new ICE connection... \n");
 
 		/* ensure ICE connection is not passed to child processes */
-		if (fcntl(IceConnectionNumber(connection), F_SETFD, FD_CLOEXEC) != 0)
-			purple_debug_warning("gtksession", "couldn't set FD_CLOEXEC\n");
+		fcntl(IceConnectionNumber(connection), F_SETFD, FD_CLOEXEC);
 
 		conninfo = g_new(struct ice_connection_info, 1);
 		conninfo->connection = connection;
@@ -365,7 +364,7 @@ pidgin_session_init(gchar *argv0, gchar *previous_id, gchar *config_dir)
 	g_free(tmp);
 
 	session_set_gchar(session, SmRestartStyleHint, (gchar) SmRestartIfRunning);
-	session_set_string(session, SmProgram, (gchar *) g_get_prgname());
+	session_set_string(session, SmProgram, g_get_prgname());
 
 	myself = g_strdup(argv0);
 	purple_debug(PURPLE_DEBUG_MISC, "Session Management",

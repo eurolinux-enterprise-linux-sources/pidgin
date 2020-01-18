@@ -63,7 +63,7 @@ static const struct {
 static JabberPresenceType
 str_to_presence_type(const char *type)
 {
-	gsize i;
+	int i;
 
 	if (type == NULL)
 		return JABBER_PRESENCE_AVAILABLE;

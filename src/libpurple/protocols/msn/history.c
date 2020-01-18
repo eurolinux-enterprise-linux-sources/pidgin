@@ -68,7 +68,7 @@ void
 msn_history_add(MsnHistory *history, MsnTransaction *trans)
 {
 	GQueue *queue;
-	gsize max_elems;
+	int max_elems;
 
 	g_return_if_fail(history != NULL);
 	g_return_if_fail(trans   != NULL);

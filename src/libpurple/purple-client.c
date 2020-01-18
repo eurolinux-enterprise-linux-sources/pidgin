@@ -15,7 +15,7 @@ static DBusGProxy *purple_proxy;
 static GList *garray_int_to_glist(GArray *array)
 {
 	GList *list = NULL;
-	gsize i;
+	int i;
 
 	for (i = 0; i < array->len; i++)
 		list = g_list_append(list, GINT_TO_POINTER(g_array_index(array,gint,i)));
@@ -27,7 +27,7 @@ static GList *garray_int_to_glist(GArray *array)
 static GSList *garray_int_to_gslist(GArray *array)
 {
 	GSList *list = NULL;
-	gsize i;
+	int i;
 
 	for (i = 0; i < array->len; i++)
 		list = g_slist_append(list, GINT_TO_POINTER(g_array_index(array,gint,i)));
@@ -66,10 +66,7 @@ void purple_init(void)
 {
 	GError *error = NULL;
 
-#if !GLIB_CHECK_VERSION(2, 36, 0)
-	/* GLib type system is automaticaly initialized since 2.36. */
-	g_type_init();
-#endif
+	g_type_init ();
 
 	bus = dbus_g_bus_get (DBUS_BUS_SESSION, &error);
 	if (!bus)

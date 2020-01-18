@@ -34,7 +34,7 @@ static const JabberScramHash hashes[] = {
 
 static const JabberScramHash *mech_to_hash(const char *mech)
 {
-	gsize i;
+	int i;
 
 	g_return_val_if_fail(mech != NULL && *mech != '\0', NULL);
 

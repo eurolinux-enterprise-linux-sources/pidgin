@@ -100,6 +100,9 @@ struct _GtkSourceUndoAction
 	guint modified  : 1;
 };
 
+/* INVALID is a pointer to an invalid action */
+#define INVALID ((void *) "IA")
+
 struct _GtkSourceUndoManagerPrivate
 {
 	GtkTextBuffer	*document;
@@ -124,7 +127,9 @@ struct _GtkSourceUndoManagerPrivate
 	guint	 	 modified_undoing_group : 1;
 
 	/* Pointer to the action (in the action list) marked as "modified".
-	 * It is NULL when no action is marked as "modified". */
+	 * It is NULL when no action is marked as "modified".
+	 * It is INVALID when the action marked as "modified" has been removed
+	 * from the action list (freeing the list or resizing it) */
 	GtkSourceUndoAction *modified_action;
 };
 
@@ -701,7 +706,7 @@ gtk_source_undo_manager_free_action_list (GtkSourceUndoManager *um)
 			--um->priv->num_of_groups;
 
 		if (action->modified)
-			um->priv->modified_action = NULL;
+			um->priv->modified_action = INVALID;
 
 		gtk_source_undo_action_free (action);
 
@@ -894,7 +899,7 @@ gtk_source_undo_manager_free_first_n_actions (GtkSourceUndoManager	*um,
 			--um->priv->num_of_groups;
 
 		if (action->modified)
-			um->priv->modified_action = NULL;
+			um->priv->modified_action = INVALID;
 
 		gtk_source_undo_action_free (action);
 
@@ -935,7 +940,7 @@ gtk_source_undo_manager_check_list_size (GtkSourceUndoManager *um)
 				--um->priv->num_of_groups;
 
 			if (undo_action->modified)
-				um->priv->modified_action = NULL;
+				um->priv->modified_action = INVALID;
 
 			gtk_source_undo_action_free (undo_action);
 
@@ -988,13 +993,9 @@ gtk_source_undo_manager_merge_action (GtkSourceUndoManager 	*um,
 
 	if (undo_action->action_type == GTK_SOURCE_UNDO_ACTION_DELETE)
 	{
-		const GtkSourceUndoDeleteAction *last_del, *undo_del;
-
-		last_del = &last_action->action.delete;
-		undo_del = &undo_action->action.delete;
-
-		if (last_del->forward != undo_del->forward ||
-			(last_del->start != undo_del->start && last_del->start != undo_del->end))
+		if ((last_action->action.delete.forward != undo_action->action.delete.forward) ||
+		    ((last_action->action.delete.start != undo_action->action.delete.start) &&
+		     (last_action->action.delete.start != undo_action->action.delete.end)))
 		{
 			last_action->mergeable = FALSE;
 			return FALSE;
@@ -1164,7 +1165,9 @@ gtk_source_undo_manager_modified_changed_handler (GtkTextBuffer        *buffer,
 
 		if (um->priv->modified_action != NULL)
 		{
-			um->priv->modified_action->modified = FALSE;
+			if (um->priv->modified_action != INVALID)
+				um->priv->modified_action->modified = FALSE;
+
 			um->priv->modified_action = NULL;
 		}
 

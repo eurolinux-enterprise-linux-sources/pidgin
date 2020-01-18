@@ -407,7 +407,7 @@ purple_buddy_icon_update(PurpleBuddyIcon *icon)
 	icon_to_set = icon->img ? icon : NULL;
 
 	/* Ensure that icon remains valid throughout */
-	purple_buddy_icon_ref(icon);
+	if (icon) purple_buddy_icon_ref(icon);
 
 	buddies = purple_find_buddies(account, username);
 	while (buddies != NULL)
@@ -455,7 +455,7 @@ purple_buddy_icon_update(PurpleBuddyIcon *icon)
 		purple_conv_im_set_icon(PURPLE_CONV_IM(conv), icon_to_set);
 
 	/* icon's refcount was incremented above */
-	purple_buddy_icon_unref(icon);
+	if (icon) purple_buddy_icon_unref(icon);
 }
 
 void

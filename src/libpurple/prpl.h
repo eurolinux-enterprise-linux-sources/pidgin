@@ -417,13 +417,14 @@ struct _PurplePluginProtocolInfo
 	 * the account is not connected, return -ENOTCONN.  If the
 	 * PRPL is unable to send the message for another reason, return
 	 * some other negative value.  You can use one of the valid
-	 * errno values, or just big something.
+	 * errno values, or just big something.  If the message should
+	 * not be echoed to the conversation window, return 0.
 	 *
 	 * @param id      The id of the chat to send the message to.
 	 * @param message The message to send to the chat.
 	 * @param flags   A bitwise OR of #PurpleMessageFlags representing
 	 *                message flags.
-	 * @return 	  A positive number or 0 in case of success,
+	 * @return 	  A positive number or 0 in case of succes,
 	 *                a negative error number in case of failure.
 	 */
 	int  (*chat_send)(PurpleConnection *, int id, const char *message, PurpleMessageFlags flags);
@@ -1009,11 +1010,6 @@ PurplePlugin *purple_find_prpl(const char *id);
 
 #ifdef __cplusplus
 }
-#endif
-
-#ifdef __COVERITY__
-#undef PURPLE_PROTOCOL_PLUGIN_HAS_FUNC
-#define PURPLE_PROTOCOL_PLUGIN_HAS_FUNC(prpl, member) (prpl->member != NULL)
 #endif
 
 #endif /* _PRPL_H_ */

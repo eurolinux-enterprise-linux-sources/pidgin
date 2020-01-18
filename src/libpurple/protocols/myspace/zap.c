@@ -201,7 +201,8 @@ msim_blist_node_menu(PurpleBlistNode *node)
 	/* TODO: get rid of once is accessible directly in GUI */
 	types = msim_attention_types(NULL);
 	i = 0;
-	for (; types; types = g_list_next(types)) {
+	do
+	{
 		PurpleAttentionType *attn;
 
 		attn = (PurpleAttentionType *)types->data;
@@ -211,7 +212,7 @@ msim_blist_node_menu(PurpleBlistNode *node)
 		zap_menu = g_list_append(zap_menu, act);
 
 		++i;
-	}
+	} while ((types = g_list_next(types)));
 
 	act = purple_menu_action_new(_("Zap"), NULL, NULL, zap_menu);
 	menu = g_list_append(NULL, act);

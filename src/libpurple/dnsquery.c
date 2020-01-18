@@ -38,8 +38,6 @@
 #include <resolv.h>
 #endif
 
-#define MAX_ADDR_RESPONSE_LEN 1048576
-
 #if (defined(__APPLE__) || defined (__unix__)) && !defined(__osf__)
 #define PURPLE_DNSQUERY_USE_FORK
 #endif
@@ -245,7 +243,7 @@ write_to_parent(int fd, const void *buf, size_t count)
 	ssize_t written;
 
 	written = write(fd, buf, count);
-	if (written < 0 || (gsize)written != count) {
+	if (written != count) {
 		if (written < 0)
 			fprintf(stderr, "dns[%d]: Error writing data to "
 					"parent: %s\n", getpid(), strerror(errno));
@@ -421,7 +419,7 @@ cope_with_gdb_brokenness(void)
 	if(n < 0)
 		return;
 
-	e[MIN((gsize)n,sizeof(e)-1)] = '\0';
+	e[MIN(n,sizeof(e)-1)] = '\0';
 
 	if(strstr(e,"gdb")) {
 		purple_debug_info("dns",
@@ -554,7 +552,7 @@ send_dns_request_to_child(PurpleDnsQueryData *query_data,
 		purple_dnsquery_resolver_destroy(resolver);
 		return FALSE;
 	}
-	if ((gsize)rc < sizeof(dns_params)) {
+	if (rc < sizeof(dns_params)) {
 		purple_debug_error("dns", "Tried to write %" G_GSSIZE_FORMAT
 				" bytes to child but only wrote %" G_GSSIZE_FORMAT "\n",
 				sizeof(dns_params), rc);
@@ -667,7 +665,7 @@ host_resolved(gpointer data, gint source, PurpleInputCondition cond)
 		/* Success! */
 		while (rc > 0) {
 			rc = read(query_data->resolver->fd_out, &addrlen, sizeof(addrlen));
-			if (rc > 0 && addrlen > 0 && addrlen < MAX_ADDR_RESPONSE_LEN) {
+			if (rc > 0 && addrlen > 0) {
 				addr = g_malloc(addrlen);
 				rc = read(query_data->resolver->fd_out, addr, addrlen);
 				hosts = g_slist_append(hosts, GINT_TO_POINTER(addrlen));

@@ -372,7 +372,7 @@ purple_upnp_parse_description_response(const gchar* httpResponse, gsize len,
 			const char *path, *start = strstr(baseURL, "://");
 			start = start ? start + 3 : baseURL;
 			path = strchr(start, '/');
-			length = path ? (gsize)(path - baseURL) : strlen(baseURL);
+			length = path ? path - baseURL : strlen(baseURL);
 			controlURL = g_strdup_printf("%.*s%s", (int)length, baseURL, tmp);
 		} else {
 			controlURL = g_strdup_printf("%s%s", baseURL, tmp);
@@ -611,10 +611,10 @@ purple_upnp_discover_send_broadcast(UPnPDiscoveryData *dd)
 		totalSize = strlen(sendMessage);
 
 		do {
-			gssize sent = sendto(dd->fd, sendMessage, totalSize, 0,
-				(struct sockaddr*) &(dd->server),
-				sizeof(struct sockaddr_in));
-			if (sent >= 0 && (gsize)sent == totalSize) {
+			if(sendto(dd->fd, sendMessage, totalSize, 0,
+					(struct sockaddr*) &(dd->server),
+					sizeof(struct sockaddr_in)
+					) == totalSize) {
 				sentSuccess = TRUE;
 				break;
 			}
@@ -746,6 +746,7 @@ const gchar *
 purple_upnp_get_public_ip()
 {
 	if (control_info.status == PURPLE_UPNP_STATUS_DISCOVERED
+			&& control_info.publicip
 			&& strlen(control_info.publicip) > 0)
 		return control_info.publicip;
 
@@ -804,6 +805,7 @@ static const gchar *
 purple_upnp_get_internal_ip(void)
 {
 	if (control_info.status == PURPLE_UPNP_STATUS_DISCOVERED
+			&& control_info.internalip
 			&& strlen(control_info.internalip) > 0)
 		return control_info.internalip;
 

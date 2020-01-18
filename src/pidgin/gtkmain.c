@@ -248,7 +248,7 @@ ui_main(void)
 	GList *icons = NULL;
 	GdkPixbuf *icon = NULL;
 	char *icon_path;
-	gsize i;
+	int i;
 	struct {
 		const char *dir;
 		const char *filename;
@@ -485,6 +485,7 @@ int main(int argc, char *argv[])
 #ifdef HAVE_SIGNAL_H
 	int sig_indx;	/* for setting up signal catching */
 	sigset_t sigset;
+	RETSIGTYPE (*prev_sig_disp)(int);
 	char errmsg[BUFSIZ];
 	GIOChannel *signal_channel;
 	GIOStatus signal_status;
@@ -499,6 +500,7 @@ int main(int argc, char *argv[])
 	gboolean debug_enabled;
 	gboolean migration_failed = FALSE;
 	GList *active_accounts;
+	struct stat st;
 
 	struct option long_options[] = {
 		{"config",       required_argument, NULL, 'c'},
@@ -521,13 +523,8 @@ int main(int argc, char *argv[])
 	debug_enabled = FALSE;
 #endif
 
-#if !GLIB_CHECK_VERSION(2, 32, 0)
-	/* GLib threading system is automaticaly initialized since 2.32.
-	 * For earlier versions, it have to be initialized before calling any
-	 * Glib or GTK+ functions.
-	 */
+	/* Initialize GThread before calling any Glib or GTK+ functions. */
 	g_thread_init(NULL);
-#endif
 
 	g_set_prgname("Pidgin");
 
@@ -621,7 +618,7 @@ int main(int argc, char *argv[])
 		perror(errmsg);
 	}
 	for(sig_indx = 0; catch_sig_list[sig_indx] != -1; ++sig_indx) {
-		if(signal(catch_sig_list[sig_indx], sighandler) == SIG_ERR) {
+		if((prev_sig_disp = signal(catch_sig_list[sig_indx], sighandler)) == SIG_ERR) {
 			snprintf(errmsg, sizeof(errmsg), "Warning: couldn't set signal %d for catching",
 				catch_sig_list[sig_indx]);
 			perror(errmsg);
@@ -633,7 +630,7 @@ int main(int argc, char *argv[])
 		}
 	}
 	for(sig_indx = 0; ignore_sig_list[sig_indx] != -1; ++sig_indx) {
-		if(signal(ignore_sig_list[sig_indx], SIG_IGN) == SIG_ERR) {
+		if((prev_sig_disp = signal(ignore_sig_list[sig_indx], SIG_IGN)) == SIG_ERR) {
 			snprintf(errmsg, sizeof(errmsg), "Warning: couldn't set signal %d to ignore",
 				ignore_sig_list[sig_indx]);
 			perror(errmsg);
@@ -807,8 +804,8 @@ int main(int argc, char *argv[])
 	 * in user's home directory.
 	 */
 	search_path = g_build_filename(purple_user_dir(), "plugins", NULL);
-	if (g_mkdir(search_path, S_IRUSR | S_IWUSR | S_IXUSR) != 0 && errno != EEXIST)
-		fprintf(stderr, "Couldn't create plugins dir\n");
+	if (!g_stat(search_path, &st))
+		g_mkdir(search_path, S_IRUSR | S_IWUSR | S_IXUSR);
 	purple_plugins_add_search_path(search_path);
 	g_free(search_path);
 	purple_plugins_add_search_path(LIBDIR);

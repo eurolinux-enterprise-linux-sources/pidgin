@@ -6,7 +6,6 @@ plugindir = $(libdir)/purple-$(PURPLE_MAJOR_VERSION)
 ssl_la_LDFLAGS        = -module -avoid-version
 ssl_gnutls_la_LDFLAGS = -module -avoid-version
 ssl_nss_la_LDFLAGS    = -module -avoid-version
-nss_prefs_la_LDFLAGS  = -module -avoid-version
 
 if PLUGINS
 
@@ -19,8 +18,7 @@ if USE_NSS
 plugin_LTLIBRARIES = \
 	ssl.la           \
 	ssl-gnutls.la    \
-	ssl-nss.la		\
-	nss-prefs.la
+	ssl-nss.la
 else
 plugin_LTLIBRARIES = \
 	ssl.la           \
@@ -30,8 +28,7 @@ else
 if USE_NSS
 plugin_LTLIBRARIES = \
 	ssl.la           \
-	ssl-nss.la	\
-	nss-prefs.la
+	ssl-nss.la
 else
 plugin_LTLIBRARIES = \
 	ssl.la
@@ -41,12 +38,10 @@ endif
 ssl_la_SOURCES        = ssl.c
 ssl_gnutls_la_SOURCES = ssl-gnutls.c
 ssl_nss_la_SOURCES    = ssl-nss.c
-nss_prefs_la_SOURCES  = nss-prefs.c
 
 ssl_la_LIBADD        = $(GLIB_LIBS)
 ssl_gnutls_la_LIBADD = $(GLIB_LIBS) $(GNUTLS_LIBS)
 ssl_nss_la_LIBADD    = $(GLIB_LIBS) $(NSS_LIBS)
-nss_prefs_la_LIBADD  = $(GLIB_LIBS) $(NSS_LIBS)
 
 endif # PLUGINS
 
@@ -61,4 +56,3 @@ AM_CPPFLAGS = \
 
 ssl_gnutls_la_CFLAGS = $(AM_CPPFLAGS) $(GNUTLS_CFLAGS)
 ssl_nss_la_CFLAGS = $(AM_CPPFLAGS) $(NSS_CFLAGS)
-nss_prefs_la_CFLAGS = $(AM_CPPFLAGS) $(NSS_CFLAGS)

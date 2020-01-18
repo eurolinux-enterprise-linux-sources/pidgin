@@ -121,7 +121,7 @@ struct yahoo_pair {
 
 struct yahoo_packet {
 	guint16 service;
-	gint32 status;
+	guint32 status;
 	guint32 id;
 	GSList *hash;
 };

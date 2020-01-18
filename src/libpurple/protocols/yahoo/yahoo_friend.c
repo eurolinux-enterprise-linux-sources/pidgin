@@ -158,12 +158,7 @@ void yahoo_process_presence(PurpleConnection *gc, struct yahoo_packet *pkt)
 
 		switch (pair->key) {
 			case 7:
-				if (g_utf8_validate(pair->value, -1, NULL)) {
-					temp = pair->value;
-				} else {
-					purple_debug_warning("yahoo", "yahoo_process_presence "
-							"got non-UTF-8 string for key %d\n", pair->key);
-				}
+				temp = pair->value;
 				break;
 			case 31:
 				value = strtol(pair->value, NULL, 10);

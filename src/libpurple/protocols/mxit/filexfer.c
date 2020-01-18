@@ -23,9 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include	"internal.h"
-#include	"debug.h"
-
+#include    "internal.h"
+#include	"purple.h"
 #include	"protocol.h"
 #include	"mxit.h"
 #include	"chunk.h"
@@ -127,7 +126,7 @@ static void mxit_xfer_init( PurpleXfer* xfer )
 
 		if ( purple_xfer_get_size( xfer ) > CP_MAX_FILESIZE ) {
 			/* the file is too big */
-			purple_xfer_error( purple_xfer_get_type( xfer ), purple_xfer_get_account( xfer ), purple_xfer_get_remote_user( xfer ), _( "The file you are trying to send is too large!" ) );
+			purple_xfer_error( xfer->type, xfer->account, xfer->who, _( "The file you are trying to send is too large!" ) );
 			purple_xfer_cancel_local( xfer );
 			return;
 		}
@@ -152,8 +151,8 @@ static void mxit_xfer_init( PurpleXfer* xfer )
  */
 static void mxit_xfer_start( PurpleXfer* xfer )
 {
-	goffset			filesize;
 	unsigned char*	buffer;
+	int				size;
 	int				wrote;
 
 	purple_debug_info( MXIT_PLUGIN_ID, "mxit_xfer_start\n" );
@@ -164,19 +163,12 @@ static void mxit_xfer_start( PurpleXfer* xfer )
 		 * a buffer and copy the file data into memory and then we can send it to
 		 * the contact. we will send the whole file with one go.
 		 */
-		filesize = purple_xfer_get_bytes_remaining( xfer );
-		buffer = g_malloc( filesize );
+		buffer = g_malloc( xfer->bytes_remaining );
+		size = fread( buffer, xfer->bytes_remaining, 1, xfer->dest_fp );
 
-		if (fread(buffer, filesize, 1, xfer->dest_fp) == 1) {
-			/* send data */
-			wrote = purple_xfer_write( xfer, buffer, filesize );
-			if ( wrote > 0 )
-				purple_xfer_set_bytes_sent( xfer, wrote );
-		} else {
-			/* file read error */
-			purple_xfer_error( purple_xfer_get_type( xfer ), purple_xfer_get_account( xfer ), purple_xfer_get_remote_user( xfer ), _( "Unable to access the local file" ) );
-			purple_xfer_cancel_local( xfer );
-		}
+		wrote = purple_xfer_write( xfer, buffer, xfer->bytes_remaining );
+		if ( wrote > 0 )
+			purple_xfer_set_bytes_sent( xfer, wrote );
 
 		/* free the buffer */
 		g_free( buffer );
@@ -303,7 +295,7 @@ gboolean mxit_xfer_enabled( PurpleConnection* gc, const char* who )
  */
 PurpleXfer* mxit_xfer_new( PurpleConnection* gc, const char* who )
 {
-	struct MXitSession*	session	= purple_connection_get_protocol_data( gc );
+	struct MXitSession*	session	= (struct MXitSession*) gc->proto_data;
 	PurpleXfer*			xfer	= NULL;
 	struct mxitxfer*	mx		= NULL;
 
@@ -403,7 +395,7 @@ static PurpleXfer* find_mxit_xfer( struct MXitSession* session, const char* file
 	while ( item ) {
 		xfer = item->data;
 
-		if ( purple_xfer_get_account( xfer ) == session->acc ) {
+		if ( xfer->account == session->acc ) {
 			/* transfer is associated with this MXit account */
 			struct mxitxfer* mx	= xfer->data;
 
@@ -432,29 +424,25 @@ static PurpleXfer* find_mxit_xfer( struct MXitSession* session, const char* file
 void mxit_xfer_rx_file( struct MXitSession* session, const char* fileid, const char* data, int datalen )
 {
 	PurpleXfer*			xfer	= NULL;
+	struct mxitxfer*	mx		= NULL;
 
 	purple_debug_info( MXIT_PLUGIN_ID, "mxit_xfer_rx_file: (size=%i)\n", datalen );
 
 	/* find the file-transfer object */
 	xfer = find_mxit_xfer( session, fileid );
 	if ( xfer ) {
+		mx = xfer->data;
+
 		/* this is the transfer we have been looking for */
 		purple_xfer_ref( xfer );
 		purple_xfer_start( xfer, -1, NULL, 0 );
+		fwrite( data, datalen, 1, xfer->dest_fp );
+		purple_xfer_unref( xfer );
+		purple_xfer_set_completed( xfer, TRUE );
+		purple_xfer_end( xfer );
 
-		if ( fwrite( data, datalen, 1, xfer->dest_fp ) > 0 ) {
-			purple_xfer_unref( xfer );
-			purple_xfer_set_completed( xfer, TRUE );
-			purple_xfer_end( xfer );
-
-			/* inform MXit that file was successfully received */
-			mxit_send_file_received( session, fileid, RECV_STATUS_SUCCESS );
-		}
-		else {
-			/* file write error */
-			purple_xfer_error( purple_xfer_get_type( xfer ), purple_xfer_get_account( xfer ), purple_xfer_get_remote_user( xfer ), _( "Unable to save the file" ) );
-			purple_xfer_cancel_local( xfer );
-		}
+		/* inform MXit that file was successfully received */
+		mxit_send_file_received( session, fileid, RECV_STATUS_SUCCESS );
 	}
 	else {
 		/* file transfer not found */

@@ -74,10 +74,13 @@ struct artist {
 static const struct developer developers[] = {
 	{"Daniel 'datallah' Atallah",          NULL,                  NULL},
 	{"Paul 'darkrain42' Aurich",           NULL,                  NULL},
+	{"John 'rekkanoryo' Bailey",           NULL,                  NULL},
 	{"Ethan 'Paco-Paco' Blanton",          NULL,                  NULL},
 	{"Hylke Bons",                         N_("artist"),          "hylkebons@gmail.com"},
 	{"Sadrul Habib Chowdhury",             NULL,                  NULL},
 	{"Mark 'KingAnt' Doliner",             NULL,                  "mark@kingant.net"},
+	{"Casey Harkins",                      NULL,                  NULL},
+	{"Ivan Komarov",                       NULL,                  "ivan.komarov@pidgin.im"},
 	{"Gary 'grim' Kramlich",               NULL,                  "grim@pidgin.im"},
 	{"Richard 'rlaager' Laager",           NULL,                  "rlaager@pidgin.im"},
 	{"Marcus 'malu' Lundblad",             NULL,                  NULL},
@@ -92,7 +95,6 @@ static const struct developer developers[] = {
 	{"Will 'resiak' Thompson",             NULL,                  NULL},
 	{"Stu 'nosnilmot' Tomlinson",          NULL,                  NULL},
 	{"Jorge 'Masca' Villaseñor",           NULL,                  NULL},
-	{"Tomasz Wasilczyk",                   NULL,                  "https://www.wasilczyk.pl"},
 	{NULL, NULL, NULL}
 };
 
@@ -101,24 +103,23 @@ static const struct developer patch_writers[] = {
 	{"Jakub 'haakon' Adam",            NULL,                        NULL},
 	{"Krzysztof Klinikowski",          NULL,                        NULL},
 	{"Eion Robb",                      NULL,                        NULL},
+	{"Peter 'Fmoo' Ruibal",            NULL,                        NULL},
+	{"Gabriel 'Nix' Schulhof",         NULL,                        NULL},
+	{"Tomasz Wasilczyk",               NULL,                        NULL},
 	{NULL, NULL, NULL}
 };
 
 /* Order: Alphabetical by Last Name */
 static const struct developer retired_developers[] = {
-	{"John 'rekkanoryo' Bailey",    NULL,                      NULL},
 	{"Herman Bloggs",               N_("win32 port"),          "herman@bluedigits.com"},
 	{"Thomas Butter",               NULL,                      NULL},
-	/* Translators: This is a person's name. For most languages we recommend
-	   not translating it. */
-	{N_("Ka-Hing Cheung"),          NULL,                      NULL},
+	/* feel free to not translate this */
+	{N_("Ka-Hing Cheung"),                 NULL,                  NULL},
 	{"Jim Duchek",                  N_("maintainer"),          "jim@linuxpimps.com"},
 	{"Sean Egan",                   NULL,                      "sean.egan@gmail.com"},
 	{"Rob Flynn",                   N_("maintainer"),          NULL},
 	{"Adam Fritzler",               N_("libfaim maintainer"),  NULL},
 	{"Christian 'ChipX86' Hammond", N_("webmaster"),           NULL},
-	{"Casey Harkins",               NULL,                      NULL},
-	{"Ivan Komarov",                NULL,                      "ivan.komarov@pidgin.im"},
 	/* If "lazy bum" translates literally into a serious insult, use something else or omit it. */
 	{"Syd Logan",                   N_("hacker and designated driver [lazy bum]"), NULL},
 	{"Christopher 'siege' O'Brien", NULL,                      "taliesein@users.sf.net"},
@@ -136,12 +137,10 @@ static const struct developer retired_developers[] = {
 static const struct developer retired_patch_writers[] = {
 	{"Felipe 'shx' Contreras",    NULL, NULL},
 	{"Decklin Foster",            NULL, NULL},
+	{"Dennis 'EvilDennisR' Ristuccia", N_("Senior Contributor/QA"), NULL},
 	{"Peter 'Bleeter' Lawler",    NULL, NULL},
 	{"Robert 'Robot101' McQueen", NULL, NULL},
 	{"Benjamin Miller",           NULL, NULL},
-	{"Dennis 'EvilDennisR' Ristuccia", N_("Senior Contributor/QA"), NULL},
-	{"Peter 'Fmoo' Ruibal",       NULL, NULL},
-	{"Gabriel 'Nix' Schulhof",    NULL, NULL},
 	{NULL, NULL, NULL}
 };
 
@@ -151,33 +150,32 @@ static const struct translator translators[] = {
 	{N_("Afrikaans"),           "af", "Friedel Wolff", "friedel@translate.org.za"},
 	{N_("Arabic"),              "ar", "Khaled Hosny", "khaledhosny@eglug.org"},
 	{N_("Assamese"),            "as", "Amitakhya Phukan", "aphukan@fedoraproject.org"},
-	{N_("Asturian"),            "ast", "Llumex03", "l.lumex03.tornes@gmail.com"},
 	{N_("Belarusian Latin"),    "be@latin", "Ihar Hrachyshka", "ihar.hrachyshka@gmail.com"},
 	{N_("Bulgarian"),           "bg", "Vladimira Girginova", "missing@here.is"},
-	{N_("Bulgarian"),           "bg", "Vladimir (Kaladan) Petkov", "kaladan@gmail.com"},
+	{N_("Bulgarian"),           "bg", "Vladimir (Kaladan) Petkov", "vpetkov@i-space.org"},
 	{N_("Bengali"),             "bn", "Jamil Ahmed", "jamil@bengalinux.org"},
 	{N_("Bengali"),             "bn", "Israt Jahan", "israt@ankur.org.bd"},
 	{N_("Bengali"),             "bn", "Samia Nimatullah", "mailsamia2001@yahoo.com"},
 	{N_("Bengali-India"),       "bn_IN", "Runa Bhattacharjee", "runab@fedoraproject.org"},
-	{N_("Bodo"),                "brx", "Chandrakant Dhutadmal", "cpdhutadmal@yahoo.com"},
 	{N_("Bosnian"),             "bs", "Lejla Hadzialic", "lejlah@gmail.com"},
 	{N_("Catalan"),             "ca", "Josep Puigdemont", "josep.puigdemont@gmail.com"},
 	{N_("Valencian-Catalan"),   "ca@valencia", "Toni Hermoso", "toniher@softcatala.org"},
 	{N_("Valencian-Catalan"),   "ca@valencia", "Josep Puigdemont", "tradgnome@softcatala.org"},
 	{N_("Czech"),               "cs", "David Vachulka", "david@konstrukce-cad.com"},
-	{N_("Danish"),              "da", "Nicky Thomassen", "nicky@aptget.dk"},
-	{N_("German"),              "de", "Björn Voigt", "bjoernv@arcor.de"},
+	{N_("Danish"),              "da", "Peter Bach", "bach.peter@gmail.com"},
+	{N_("Danish"),              "da", "Morten Brix Pedersen", "morten@wtf.dk"},
+	{N_("German"),              "de", "Jochen Kemnade", "jochenkemnade@web.de"},
+	{N_("German"),              "de", "Björn Voigt", "bjoern@cs.tu-berlin.de"},
 	{N_("Dzongkha"),            "dz", "Norbu", "nor_den@hotmail.com"},
 	{N_("Dzongkha"),            "dz", "Jurmey Rabgay", "jur_gay@yahoo.com"},
 	{N_("Dzongkha"),            "dz", "Wangmo Sherpa", "rinwanshe@yahoo.com"},
 	{N_("Greek"),               "el", "Katsaloulis Panayotis", "panayotis@panayotis.com"},
 	{N_("Greek"),               "el", "Panos Bouklis", "panos@echidna-band.com"},
-	{N_("Australian English"),  "en_AU", "Michael Findlay", "keltoiboy@gmail.com"},
+	{N_("Australian English"),  "en_AU", "Peter Lawler", "trans@six-by-nine.com.au"},
 	{N_("British English"),     "en_GB", "Phil Hannent", "phil@hannent.co.uk"},
 	{N_("Canadian English"),    "en_CA", "Adam Weinberger", "adamw@gnome.org"},
 	{N_("Esperanto"),           "eo", "Stéphane Fillod", "fillods@users.sourceforge.net"},
 	{N_("Spanish"),             "es", "Javier Fernández-Sanguino Peña", "jfs@debian.org"},
-	{N_("Argentine Spanish"),   "es_AR", "KNTRO", "tskuhn@gmail.com"},
 	{N_("Estonian"),            "et", "Ivar Smolin", "okul@linux.ee"},
 	{N_("Basque"),              "eu", "Mikel Pascual Aldabaldetreku", "mikel.paskual@gmail.com"},
 	{N_("Persian"),             "fa", "Elnaz Sarbar", "elnaz@farsiweb.info"},
@@ -186,7 +184,7 @@ static const struct translator translators[] = {
 	{N_("Finnish"),             "fi", "Timo Jyrinki", "timo.jyrinki@iki.fi"},
 	{N_("French"),              "fr", "Éric Boumaour", "zongo_fr@users.sourceforge.net"},
 	{N_("Irish"),               "ga", "Aaron Kearns", "ajkearns6@gmail.com"},
-	{N_("Irish"),               "ga", "Kevin Scannell", NULL},
+	{N_("Irish"),               "ga", "Kevin Scannell", "NULL"},
 	{N_("Galician"),            "gl", "Mar Castro", "mariamarcp@gmail.com"},
 	{N_("Galician"),            "gl", "Frco. Javier Rial", "fjrial@cesga.es"},
 	{N_("Gujarati"),            "gu", "Ankit Patel", "ankit_patel@users.sf.net"},
@@ -196,21 +194,19 @@ static const struct translator translators[] = {
 	{N_("Hindi"),               "hi", "Rajesh Ranjan", "rajeshkajha@yahoo.com"},
 	{N_("Croatian"),            "hr", "Sabina Drempetić", "bina91991@googlemail.com"},
 	{N_("Hungarian"),           "hu", "Kelemen Gábor", "kelemeng@gnome.hu"},
+	{N_("Armenian"),            "hy", "David Avsharyan", "avsharyan@gmail.com"},
 	{N_("Indonesian"),          "id", "Rai S. Regawa", "raireg@yahoo.com"},
 	{N_("Italian"),             "it", "Claudio Satriano", "satriano@gmail.com"},
 	{N_("Japanese"),            "ja", "Takayuki Kusano", "AE5T-KSN@asahi-net.or.jp"},
 	{N_("Georgian"),            "ka", N_("Ubuntu Georgian Translators"), "alexander.didebulidze@stusta.mhn.de"},
-	{N_("Kazakh"),              "kk", "Baurzhan Muftakhidinov", "baurthefirst@gmail.com"},
 	{N_("Khmer"),               "km", "Khoem Sokhem", "khoemsokhem@khmeros.info"},
 	{N_("Kannada"),             "kn", N_("Kannada Translation team"), "translation@sampada.info"},
 	{N_("Korean"),              "ko", "Sushizang", "sushizang@empal.com"},
-	{N_("Kashmiri"),            "kas", "Chandrakant Dhutadmal", "cpdhutadmal@yahoo.com"},
 	{N_("Kurdish"),             "ku", "Amed Ç. Jiyan", "amedcj@hotmail.com"},
 	{N_("Kurdish"),             "ku", "Erdal Ronahi", "erdal.ronahi@gmail.com"},
 	{N_("Kurdish"),             "ku", "Rizoyê Xerzî", "rizoxerzi@hotmail.com"},
-	{N_("Kurdish (Sorani)"),    "ku_IQ", "Haval A. Ahmed", "haval.abdulkarim@gmail.com"},
+	{N_("Lao"),                 "lo", "Anousak Souphavah", "anousak@gmail.com"},
 	{N_("Lithuanian"),          "lt", "Algimantas Margevičius", "margevicius.algimantas@gmail.com"},
-	{N_("Latvian"),             "lv", "Rudolfs Mazurs", "rudolfs.mazurs@gmail.com"},
 	{N_("Maithili"),            "mai", "Sangeeta Kumari", "sangeeta_0975@yahoo.com"},
 	{N_("Maithili"),            "mai", "Rajesh Ranjan", "rajeshkajha@yahoo.com"},
 	{N_("Meadow Mari"),         "mhr", "David Preece", "davidpreece1@gmail.com"},
@@ -220,43 +216,40 @@ static const struct translator translators[] = {
 	{N_("Malayalam"),           "ml", "Ani Peter", "apeter@redhat.com"},
 	{N_("Mongolian"),           "mn", "gooyo", NULL},
 	{N_("Marathi"),             "mr", "Sandeep Shedmake", "sandeep.shedmake@gmail.com"},
+	{N_("Malay"),               "ms_MY", "Muhammad Najmi bin Ahmad Zabidi", "najmi.zabidi@gmail.com"},
 	{N_("Burmese"),             "my_MM", "Thura Hlaing", "trhura@gmail.com"},
-	{N_("Bokmål Norwegian"),    "nb", "Allan Nordhøy", "epost@anotheragency.no"},
-	{N_("Nepali"),              "ne", "Shyam Krishna Bal", NULL},
+	{N_("Bokmål Norwegian"),    "nb", "Hans Fredrik Nordhaug", "hans@nordhaug.priv.no"},
+	{N_("Nepali"),              "ne", "Shyam Krishna Bal", "shyamkrishna_bal@yahoo.com"},
 	{N_("Dutch, Flemish"),      "nl", "Gideon van Melle", "translations@gvmelle.com"},
 	{N_("Norwegian Nynorsk"),   "nn", "Yngve Spjeld Landro", "l10n@landro.net"},
-	{N_("Occitan"),             "oc", "Cédric Valmary", "cvalmary@yahoo.fr"},
+	{N_("Occitan"),             "oc", "Yannig Marchegay", "yannig@marchegay.org"},
 	{N_("Oriya"),               "or", "Manoj Kumar Giri", "giri.manojkr@gmail.com"},
 	{N_("Punjabi"),             "pa", "Amanpreet Singh Alam", "aalam@users.sf.net"},
 	{N_("Polish"),              "pl", "Piotr Drąg", "piotrdrag@gmail.com"},
-	{N_("Portuguese"),          "pt", "Paulo Ribeiro", "paulo@diffraction.pt"},
+	{N_("Polish"),              "pl", "Piotr Makowski", "pmakowski@aviary.pl"},
+	{N_("Portuguese"),          "pt", "Paulo Ribeiro", NULL},
 	{N_("Portuguese-Brazil"),   "pt_BR", "Renato Silva", "br.renatosilva@gmail.com"},
 	{N_("Pashto"),              "ps", "Kashif Masood", "masudmails@yahoo.com"},
 	{N_("Romanian"),            "ro", "Mișu Moldovan", "dumol@gnome.org"},
 	{N_("Romanian"),            "ro", "Andrei Popescu", "andreimpopescu@gmail.com"},
 	{N_("Russian"),             "ru", "Антон Самохвалов", "samant.ua@mail.ru"},
-	{N_("Sindhi"),              "sd", "Chandrakant Dhutadmal", "cpdhutadmal@yahoo.com"},
 	{N_("Slovak"),              "sk", "Jozef Káčer", "quickparser@gmail.com"},
 	{N_("Slovak"),              "sk", "loptosko", "loptosko@gmail.com"},
 	{N_("Slovenian"),           "sl", "Martin Srebotnjak", "miles@filmsi.net"},
 	{N_("Albanian"),            "sq", "Besnik Bleta", "besnik@programeshqip.org"},
 	{N_("Serbian"),             "sr", "Miloš Popović", "gpopac@gmail.com"},
-	{N_("Serbian Latin"),       "sr@latin", "Miloš Popović", "gpopac@gmail.com"},
+	{N_("Serbian"),             "sr@Latn", "Miloš Popović", "gpopac@gmail.com"},
 	{N_("Sinhala"),             "si", "Yajith Ajantha Dayarathna", "yajith@gmail.com"},
 	{N_("Sinhala"),             "si", "Danishka Navin", "snavin@redhat.com"},
-	{N_("Swedish"),             "sv", "Josef Andersson", "josef.andersson@gmail.com"},
+	{N_("Swedish"),             "sv", "Peter Hjalmarsson", "xake@telia.com"},
 	{N_("Swahili"),             "sw", "Paul Msegeya", "msegeya@gmail.com"},
 	{N_("Tamil"),               "ta", "I. Felix", "ifelix25@gmail.com"},
 	{N_("Tamil"),               "ta", "Viveka Nathan K", "vivekanathan@users.sourceforge.net"},
 	{N_("Telugu"),              "te", "Krishnababu Krottapalli", "krottapalli@ymail.com"},
 	{N_("Thai"),                "th", "Isriya Paireepairit", "markpeak@gmail.com"},
-	{N_("Tatar"),               "tt", "ILDAR Valeev", "v_ildar@bk.ru"},
+	{N_("Turkish"),             "tr", "Serdar Soytetir", "tulliana@gmail.com"},
 	{N_("Ukranian"),            "uk", "Oleksandr Kovalenko", "alx.kovalenko@gmail.com"},
 	{N_("Urdu"),                "ur", "RKVS Raman", "rkvsraman@gmail.com"},
-	{N_("Uzbek"),               "uz",
-	/* Translators: This is a person's name. For most languages we recommend
-	   not translating it. */
-                                          N_("Akmal Khushvakov"), "uzbadmin@gmail.com"},
 	{N_("Vietnamese"),          "vi", "Nguyễn Vũ Hưng", "vuhung16plus@gmail.com"},
 	{N_("Simplified Chinese"),  "zh_CN", "Aron Xu", "happyaron.xu@gmail.com"},
 	{N_("Hong Kong Chinese"),   "zh_HK", "Abel Cheung", "abelindsay@gmail.com"},
@@ -278,11 +271,7 @@ static const struct translator past_translators[] = {
 	{N_("Catalan"),             "ca", "Robert Millan", NULL},
 	{N_("Czech"),               "cs", "Honza Král", NULL},
 	{N_("Czech"),               "cs", "Miloslav Trmac", "mitr@volny.cz"},
-	{N_("Danish"),              "da", "Peter Bach", "bach.peter@gmail.com"},
-	{N_("Danish"),              "da", "Morten Brix Pedersen", "morten@wtf.dk"},
 	{N_("German"),              "de", "Daniel Seifert, Karsten Weiss", NULL},
-	{N_("German"),              "de", "Jochen Kemnade", "jochenkemnade@web.de"},
-	{N_("Australian English"),  "en_AU", "Peter Lawler", "trans@six-by-nine.com.au"},
 	{N_("British English"),     "en_GB", "Luke Ross", "luke@lukeross.name"},
 	{N_("Spanish"),             "es", "JM Pérez Cáncer", NULL},
 	{N_("Spanish"),             "es", "Nicolás Lichtmaier", NULL},
@@ -300,7 +289,6 @@ static const struct translator past_translators[] = {
 	{N_("Hebrew"),              "he", "Pavel Bibergal", NULL},
 	{N_("Hindi"),               "hi", "Ravishankar Shrivastava", NULL},
 	{N_("Hungarian"),           "hu", "Zoltan Sutto", NULL},
-	{N_("Armenian"),            "hy", "David Avsharyan", NULL},
 	{N_("Italian"),             "it", "Salvatore di Maggio", NULL},
 	{N_("Japanese"),            "ja", "Takashi Aihana", NULL},
 	{N_("Japanese"),            "ja", "Ryosuke Kutsuna", NULL},
@@ -309,21 +297,16 @@ static const struct translator past_translators[] = {
 	{N_("Georgian"),            "ka", "Temuri Doghonadze", NULL},
 	{N_("Korean"),              "ko", "Sang-hyun S, A Ho-seok Lee", NULL},
 	{N_("Korean"),              "ko", "Kyeong-uk Son", NULL},
-	{N_("Lao"),                 "lo", "Anousak Souphavah", NULL},
 	{N_("Lithuanian"),          "lt", "Laurynas Biveinis", "laurynas.biveinis@gmail.com"},
 	{N_("Lithuanian"),          "lt", "Gediminas Čičinskas", NULL},
 	{N_("Lithuanian"),          "lt", "Andrius Štikonas", NULL},
 	{N_("Macedonian"),          "mk", "Tomislav Markovski", NULL},
-	{N_("Malay"),               "ms_MY", "Muhammad Najmi bin Ahmad Zabidi", NULL},
-	{N_("Bokmål Norwegian"),    "nb", "Hans Fredrik Nordhaug", "hans@nordhaug.priv.no"},
 	{N_("Bokmål Norwegian"),    "nb", "Hallvard Glad", "hallvard.glad@gmail.com"},
 	{N_("Bokmål Norwegian"),    "nb", "Petter Johan Olsen", NULL},
 	{N_("Bokmål Norwegian"),    "nb", "Espen Stefansen", "espenas@gmail.com"},
 	{N_("Dutch, Flemish"),      "nl", "Vincent van Adrighem", "V.vanAdrighem@dirck.mine.nu"},
-	{N_("Occitan"),             "oc", "Yannig Marchegay", "yannig@marchegay.org"},
 	{N_("Polish"),              "pl", "Krzysztof Foltman", "krzysztof@foltman.com"},
 	{N_("Polish"),              "pl", "Paweł Godlewski", "pawel@bajk.pl"},
-	{N_("Polish"),              "pl", "Piotr Makowski", NULL},
 	{N_("Polish"),              "pl", "Emil Nowak", "emil5@go2.pl"},
 	{N_("Polish"),              "pl", "Przemysław Sułek", NULL},
 	{N_("Portuguese"),          "pt", "Duarte Henriques", NULL},
@@ -338,11 +321,9 @@ static const struct translator past_translators[] = {
 	{N_("Slovenian"),           "sl", "Matjaz Horvat", NULL},
 	{N_("Serbian"),             "sr", "Danilo Šegan", "dsegan@gmx.net"},
 	{N_("Serbian"),             "sr", "Aleksandar Urosevic", "urke@users.sourceforge.net"},
-	{N_("Swedish"),             "sv", "Peter Hjalmarsson", "xake@telia.com"},
 	{N_("Swedish"),             "sv", "Tore Lundqvist", NULL},
 	{N_("Swedish"),             "sv", "Christian Rose", NULL},
 	{N_("Telugu"),              "te", "Mr. Subbaramaih", "info.gist@cdac.in"},
-	{N_("Turkish"),             "tr", "Serdar Soytetir", "tulliana@gmail.com"},
 	{N_("Turkish"),             "tr", "Ahmet Alp Balkan", NULL},
 	{N_("Vietnamese"),          "vi", N_("T.M.Thanh and the Gnome-Vi Team"), "gnomevi-list@lists.sf.net"},
 	{N_("Simplified Chinese"),  "zh_CN", "Hashao, Rocky S. Lee", NULL},
@@ -356,11 +337,7 @@ add_developers(GString *str, const struct developer *list)
 {
 	for (; list->name != NULL; list++) {
 		if (list->email != NULL) {
-			const gchar *proto = "mailto:";
-			if (strchr(list->email, ':') != NULL)
-				proto = "";
-			g_string_append_printf(str, "  <a href=\"%s%s\">%s</a>%s%s%s<br/>",
-			                       proto,
+			g_string_append_printf(str, "  <a href=\"mailto:%s\">%s</a>%s%s%s<br/>",
 			                       list->email, _(list->name),
 			                       list->role ? " (" : "",
 			                       list->role ? _(list->role) : "",
@@ -538,14 +515,14 @@ void pidgin_dialogs_about(void)
 			  "\tXMPP MUC: devel@conference.pidgin.im<BR><BR>"), PURPLE_WEBSITE,
 			"http://developer.pidgin.im/wiki/FAQ");
 
-	g_string_append(str,
+	g_string_append_printf(str,
 			"<font size=\"4\"><b>Help for Oracle Employees</b></font> is "
 			"available from your normal internal helpdesk or IT department.  "
 			"The Pidgin developer and user communities cannot assist you in "
 			"the configuration or use of Pidgin within Oracle, as we know "
 			"nothing of Oracle's infrastructure.<br/><br/>");
 
-	g_string_append(str,
+	g_string_append_printf(str,
 			_("<font size=\"4\"><b>Help from other Pidgin users</b></font> is "
 			  "available by e-mailing <a "
 			  "href=\"mailto:support@pidgin.im\">support@pidgin.im</a><br/>"
@@ -638,10 +615,14 @@ g_string_append(str, "<br/>  <b>Library Support</b><br/>");
 #endif
 #endif
 
-#ifdef HAVE_LIBGADU
-	g_string_append(str, "    <b>Gadu-Gadu library (libgadu):</b> External<br/>");
-#else
+#if defined(_WIN32) || defined(USE_INTERNAL_LIBGADU)
 	g_string_append(str, "    <b>Gadu-Gadu library (libgadu):</b> Internal<br/>");
+#else
+#ifdef HAVE_LIBGADU
+	g_string_append(str, "    <b>Gadu-Gadu library (libgadu):</b> Enabled<br/>");
+#else
+	g_string_append(str, "    <b>Gadu-Gadu library (libgadu):</b> Disabled<br/>");
+#endif
 #endif
 
 #ifdef USE_GTKSPELL

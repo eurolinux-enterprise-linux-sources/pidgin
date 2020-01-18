@@ -49,8 +49,6 @@
 #define T_TXT	PurpleDnsTypeTxt
 #endif
 
-#define MAX_ADDR_RESPONSE_LEN 1048576
-
 #include "debug.h"
 #include "dnssrv.h"
 #include "eventloop.h"
@@ -63,6 +61,13 @@ typedef union {
 	HEADER hdr;
 	u_char buf[1024];
 } queryans;
+#else
+static DNS_STATUS (WINAPI *MyDnsQuery_UTF8) (
+	PCSTR lpstrName, WORD wType, DWORD fOptions,
+	PIP4_ARRAY aipServers, PDNS_RECORD* ppQueryResultsSet,
+	PVOID* pReserved) = NULL;
+static void (WINAPI *MyDnsRecordListFree) (PDNS_RECORD pRecordList,
+	DNS_FREE_TYPE FreeType) = NULL;
 #endif
 
 struct _PurpleSrvTxtQueryData {
@@ -483,10 +488,6 @@ resolved(gpointer data, gint source, PurpleInputCondition cond)
 
 	if (read(source, &type, sizeof(type)) == sizeof(type)) {
 		if (read(source, &size, sizeof(size)) == sizeof(size)) {
-			if (size < -1 || size > MAX_ADDR_RESPONSE_LEN) {
-				purple_debug_warning("dnssrv", "res_query returned invalid number\n");
-				size = 0;
-			}
 			if (size == -1 || size == 0) {
 				if (size == -1) {
 					purple_debug_warning("dnssrv", "res_query returned an error\n");
@@ -544,20 +545,12 @@ resolved(gpointer data, gint source, PurpleInputCondition cond)
 							responses = NULL;
 							break;
 						}
-						if (len > MAX_ADDR_RESPONSE_LEN) {
-							purple_debug_error("dnssrv", "we've read invalid number\n");
-							size = 0;
-							g_list_foreach(responses, (GFunc)purple_txt_response_destroy, NULL);
-							g_list_free(responses);
-							responses = NULL;
-							break;
-						}
 
 						res = g_new0(PurpleTxtResponse, 1);
 						res->content = g_new0(gchar, len);
 
 						red = read(source, res->content, len);
-						if (red < 0 || (gsize)red != len) {
+						if (red != len) {
 							purple_debug_error("dnssrv","unable to read txt "
 									"response: %s\n", g_strerror(errno));
 							size = 0;
@@ -653,7 +646,7 @@ res_thread(gpointer data)
 	DNS_STATUS ds;
 	PurpleSrvTxtQueryData *query_data = data;
 	type = query_data->type;
-	ds = DnsQuery_UTF8(query_data->query, type, DNS_QUERY_STANDARD, NULL, &dr, NULL);
+	ds = MyDnsQuery_UTF8(query_data->query, type, DNS_QUERY_STANDARD, NULL, &dr, NULL);
 	if (ds != ERROR_SUCCESS) {
 		gchar *msg = g_win32_error_message(ds);
 		if (type == DNS_TYPE_SRV) {
@@ -686,7 +679,7 @@ res_thread(gpointer data)
 				lst = g_list_prepend(lst, srvres);
 			}
 
-			DnsRecordListFree(dr, DnsFreeRecordList);
+			MyDnsRecordListFree(dr, DnsFreeRecordList);
 			query_data->results = purple_srv_sort(lst);
 		} else if (type == DNS_TYPE_TXT) {
 			PDNS_RECORD dr_tmp;
@@ -714,7 +707,7 @@ res_thread(gpointer data)
 				lst = g_list_append(lst, txtres);
 			}
 
-			DnsRecordListFree(dr, DnsFreeRecordList);
+			MyDnsRecordListFree(dr, DnsFreeRecordList);
 			query_data->results = lst;
 		} else {
 
@@ -754,6 +747,7 @@ purple_srv_resolve_account(PurpleAccount *account, const char *protocol,
 	int pid;
 #else
 	GError* err = NULL;
+	static gboolean initialized = FALSE;
 #endif
 
 	if (!protocol || !*protocol || !transport || !*transport || !domain || !*domain) {
@@ -765,7 +759,7 @@ purple_srv_resolve_account(PurpleAccount *account, const char *protocol,
 	proxy_type = purple_proxy_info_get_type(
 		purple_proxy_get_setup(account));
 	if (proxy_type == PURPLE_PROXY_TOR) {
-		purple_debug_info("dnssrv", "Aborting SRV lookup in Tor Proxy mode.\n");
+		purple_debug_info("dnssrv", "Aborting SRV lookup in Tor Proxy mode.");
 		cb(NULL, 0, extradata);
 		return NULL;
 	}
@@ -842,10 +836,21 @@ purple_srv_resolve_account(PurpleAccount *account, const char *protocol,
 
 	return query_data;
 #else
-	query_data->resolver = g_thread_create(res_thread, query_data, FALSE, &err);
-	if (query_data->resolver == NULL) {
-		query_data->error_message = g_strdup_printf("SRV thread create failure: %s\n", (err && err->message) ? err->message : "");
-		g_error_free(err);
+	if (!initialized) {
+		MyDnsQuery_UTF8 = (void*) wpurple_find_and_loadproc("dnsapi.dll", "DnsQuery_UTF8");
+		MyDnsRecordListFree = (void*) wpurple_find_and_loadproc(
+			"dnsapi.dll", "DnsRecordListFree");
+		initialized = TRUE;
+	}
+
+	if (!MyDnsQuery_UTF8 || !MyDnsRecordListFree)
+		query_data->error_message = g_strdup("System missing DNS API (Requires W2K+)\n");
+	else {
+		query_data->resolver = g_thread_create(res_thread, query_data, FALSE, &err);
+		if (query_data->resolver == NULL) {
+			query_data->error_message = g_strdup_printf("SRV thread create failure: %s\n", (err && err->message) ? err->message : "");
+			g_error_free(err);
+		}
 	}
 
 	/* The query isn't going to happen, so finish the SRV lookup now.
@@ -878,12 +883,13 @@ PurpleSrvTxtQueryData *purple_txt_resolve_account(PurpleAccount *account,
 	int pid;
 #else
 	GError* err = NULL;
+	static gboolean initialized = FALSE;
 #endif
 
 	proxy_type = purple_proxy_info_get_type(
 		purple_proxy_get_setup(account));
 	if (proxy_type == PURPLE_PROXY_TOR) {
-		purple_debug_info("dnssrv", "Aborting TXT lookup in Tor Proxy mode.\n");
+		purple_debug_info("dnssrv", "Aborting TXT lookup in Tor Proxy mode.");
 		cb(NULL, extradata);
 		return NULL;
 	}
@@ -961,10 +967,21 @@ PurpleSrvTxtQueryData *purple_txt_resolve_account(PurpleAccount *account,
 
 	return query_data;
 #else
-	query_data->resolver = g_thread_create(res_thread, query_data, FALSE, &err);
-	if (query_data->resolver == NULL) {
-		query_data->error_message = g_strdup_printf("TXT thread create failure: %s\n", (err && err->message) ? err->message : "");
-		g_error_free(err);
+	if (!initialized) {
+		MyDnsQuery_UTF8 = (void*) wpurple_find_and_loadproc("dnsapi.dll", "DnsQuery_UTF8");
+		MyDnsRecordListFree = (void*) wpurple_find_and_loadproc(
+			"dnsapi.dll", "DnsRecordListFree");
+		initialized = TRUE;
+	}
+
+	if (!MyDnsQuery_UTF8 || !MyDnsRecordListFree)
+		query_data->error_message = g_strdup("System missing DNS API (Requires W2K+)\n");
+	else {
+		query_data->resolver = g_thread_create(res_thread, query_data, FALSE, &err);
+		if (query_data->resolver == NULL) {
+			query_data->error_message = g_strdup_printf("TXT thread create failure: %s\n", (err && err->message) ? err->message : "");
+			g_error_free(err);
+		}
 	}
 
 	/* The query isn't going to happen, so finish the TXT lookup now.

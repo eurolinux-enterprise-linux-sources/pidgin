@@ -514,13 +514,7 @@ gtk_imhtml_tip_paint (GtkIMHtml *imhtml)
 
 	g_return_val_if_fail(GTK_IS_IMHTML(imhtml), FALSE);
 
-	/* We set the text in a separate function call so we can specify a
-	   max length.  This is important so the tooltip isn't too wide for
-	   the screen, and also because some X library function exits the
-	   process when it can't allocate enough memory for a super wide
-	   tooltip. */
-	layout = gtk_widget_create_pango_layout(imhtml->tip_window, NULL);
-	pango_layout_set_text(layout, imhtml->tip, 200);
+	layout = gtk_widget_create_pango_layout(imhtml->tip_window, imhtml->tip);
 
 	gtk_paint_flat_box (imhtml->tip_window->style, imhtml->tip_window->window,
 						GTK_STATE_NORMAL, GTK_SHADOW_OUT, NULL, imhtml->tip_window,
@@ -567,15 +561,7 @@ gtk_imhtml_tip (gpointer data)
 							  G_CALLBACK (gtk_imhtml_tip_paint), imhtml);
 
 	gtk_widget_ensure_style (imhtml->tip_window);
-
-	/* We set the text in a separate function call so we can specify a
-	   max length.  This is important so the tooltip isn't too wide for
-	   the screen, and also because some X library function exits the
-	   process when it can't allocate enough memory for a super wide
-	   tooltip. */
-	layout = gtk_widget_create_pango_layout(imhtml->tip_window, NULL);
-	pango_layout_set_text(layout, imhtml->tip, 200);
-
+	layout = gtk_widget_create_pango_layout(imhtml->tip_window, imhtml->tip);
 	font = pango_context_load_font(pango_layout_get_context(layout),
 			      imhtml->tip_window->style->font_desc);
 
@@ -682,7 +668,7 @@ gtk_motion_event_notify(GtkWidget *imhtml, GdkEventMotion *event, gpointer data)
 	}
 
 	if (GTK_IMHTML(imhtml)->tip) {
-		if (tip == GTK_IMHTML(imhtml)->tip) {
+		if ((tip == GTK_IMHTML(imhtml)->tip)) {
 			g_slist_free(tags);
 			return FALSE;
 		}
@@ -1472,7 +1458,7 @@ imhtml_find_protocol(const char *url, gboolean reverse)
 	GtkIMHtmlClass *klass;
 	GList *iter;
 	GtkIMHtmlProtocol *proto = NULL;
-	int length = reverse ? strlen(url) : 0;
+	int length = reverse ? strlen(url) : -1;
 
 	klass = g_type_class_ref(GTK_TYPE_IMHTML);
 	for (iter = klass->protocols; iter; iter = iter->next) {
@@ -2367,11 +2353,10 @@ gtk_imhtml_is_tag (const gchar *string,
 	if (!g_ascii_strncasecmp(string, "!--", strlen ("!--"))) {
 		gchar *e = strstr (string + strlen("!--"), "-->");
 		if (e) {
-			if (len) {
+			if (len)
 				*len = e - string + strlen ("-->");
-				if (tag)
-					*tag = g_strndup (string + strlen ("!--"), *len - strlen ("!---->"));
-			}
+			if (tag)
+				*tag = g_strndup (string + strlen ("!--"), *len - strlen ("!---->"));
 			return TRUE;
 		}
 	}
@@ -2381,7 +2366,7 @@ gtk_imhtml_is_tag (const gchar *string,
 	if (len)
 		*len = close - string + 1;
 	if (tag)
-		*tag = g_strndup(string, close - string);
+		*tag = g_strndup(string, *len - 1);
 	return TRUE;
 }
 
@@ -5108,7 +5093,7 @@ void gtk_imhtml_insert_image_at_iter(GtkIMHtml *imhtml, int id, GtkTextIter *ite
 static const gchar *tag_to_html_start(GtkTextTag *tag)
 {
 	const gchar *name;
-	static gchar buf[16384];
+	static gchar buf[1024];
 
 	name = tag->name;
 	g_return_val_if_fail(name != NULL, "");

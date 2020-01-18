@@ -72,12 +72,7 @@ static void simple_keep_alive(PurpleConnection *gc) {
 			 remain in the NAT table */
 		gchar buf[2] = {0, 0};
 		purple_debug_info("simple", "sending keep alive\n");
-		if (sendto(sip->fd, buf, 1, 0,
-			(struct sockaddr*)&sip->serveraddr,
-			sizeof(struct sockaddr_in)) != 1)
-		{
-			purple_debug_error("simple", "failed sending keep alive\n");
-		}
+		sendto(sip->fd, buf, 1, 0, (struct sockaddr*)&sip->serveraddr, sizeof(struct sockaddr_in));
 	}
 	return;
 }
@@ -906,11 +901,11 @@ static gboolean simple_add_lcs_contacts(struct simple_account_data *sip, struct 
 
 		for(item = xmlnode_get_child(isc, "contact"); item; item = xmlnode_get_next_twin(item))
 		{
-			const char *uri;
+			const char *uri, *name, *groups;
 			char *buddy_name;
 			uri = xmlnode_get_attrib(item, "uri");
-			/*name = xmlnode_get_attrib(item, "name");
-			groups = xmlnode_get_attrib(item, "groups");*/
+			name = xmlnode_get_attrib(item, "name");
+			groups = xmlnode_get_attrib(item, "groups");
 			purple_debug_info("simple", "URI->%s\n", uri);
 
 			buddy_name = g_strdup_printf("sip:%s", uri);
@@ -1645,7 +1640,7 @@ static void process_input(struct simple_account_data *sip, struct sip_connection
 		cur += 2;
 		restlen = conn->inbufused - (cur - conn->inbuf);
 		if(restlen >= msg->bodylen) {
-			dummy = g_new(char, msg->bodylen + 1);
+			dummy = g_malloc(msg->bodylen + 1);
 			memcpy(dummy, cur, msg->bodylen);
 			dummy[msg->bodylen] = '\0';
 			msg->body = dummy;
@@ -1721,12 +1716,15 @@ static void simple_newconn_cb(gpointer data, gint source, PurpleInputCondition c
 	PurpleConnection *gc = data;
 	struct simple_account_data *sip = gc->proto_data;
 	struct sip_connection *conn;
-	int newfd;
+	int newfd, flags;
 
 	newfd = accept(source, NULL, NULL);
-	g_return_if_fail(newfd >= 0);
 
-	_purple_network_set_common_socket_flags(newfd);
+	flags = fcntl(newfd, F_GETFL);
+	fcntl(newfd, F_SETFL, flags | O_NONBLOCK);
+#ifndef _WIN32
+	fcntl(newfd, F_SETFD, FD_CLOEXEC);
+#endif
 
 	conn = connection_create(sip, newfd);
 

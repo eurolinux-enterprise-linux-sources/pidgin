@@ -501,7 +501,8 @@ jabber_google_relay_response_session_handle_initiate_cb(GoogleSession *session,
 
 	for (codec_element = xmlnode_get_child(session->description, "payload-type");
 	     codec_element; codec_element = codec_element->next) {
-		const char *id, *encoding_name,  *clock_rate;
+		const char *id, *encoding_name,  *clock_rate,
+				*width, *height, *framerate;
 		gboolean video;
 		if (codec_element->name &&
 				strcmp(codec_element->name, "payload-type"))
@@ -517,10 +518,10 @@ jabber_google_relay_response_session_handle_initiate_cb(GoogleSession *session,
 					codec_element, "clockrate");
 			video = FALSE;
 		} else {
-			/*width = xmlnode_get_attrib(codec_element, "width");
+			width = xmlnode_get_attrib(codec_element, "width");
 			height = xmlnode_get_attrib(codec_element, "height");
 			framerate = xmlnode_get_attrib(
-					codec_element, "framerate");*/
+					codec_element, "framerate");
 			clock_rate = "90000";
 			video = TRUE;
 		}
@@ -715,7 +716,7 @@ google_session_handle_accept(JabberStream *js, GoogleSession *session, xmlnode *
 
 	for (; codec_element; codec_element = codec_element->next) {
 		const gchar *xmlns, *encoding_name, *id,
-				*clock_rate;
+				*clock_rate, *width, *height, *framerate;
 		gboolean video_codec = FALSE;
 
 		if (!purple_strequal(codec_element->name, "payload-type"))
@@ -730,10 +731,10 @@ google_session_handle_accept(JabberStream *js, GoogleSession *session, xmlnode *
 					codec_element, "clockrate");
 		else {
 			clock_rate = "90000";
-			/*width = xmlnode_get_attrib(codec_element, "width");
+			width = xmlnode_get_attrib(codec_element, "width");
 			height = xmlnode_get_attrib(codec_element, "height");
 			framerate = xmlnode_get_attrib(
-					codec_element, "framerate");*/
+					codec_element, "framerate");
 			video_codec = TRUE;
 		}
 

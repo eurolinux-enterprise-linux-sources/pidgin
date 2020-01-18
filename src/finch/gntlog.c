@@ -248,7 +248,7 @@ static void populate_log_tree(FinchLogViewer *lv)
 									NULL);
 			gnt_tree_set_expanded(GNT_TREE(lv->tree), month, FALSE);
 
-			g_strlcpy(prev_top_month, month, sizeof(prev_top_month));
+			strncpy(prev_top_month, month, sizeof(prev_top_month));
 		}
 
 		/* sub */

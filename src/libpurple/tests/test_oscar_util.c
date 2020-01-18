@@ -5,7 +5,7 @@
 
 START_TEST(test_oscar_util_name_compare)
 {
-	size_t i;
+	int i;
 	const char *good[] = {
 		"test",
 		"TEST",

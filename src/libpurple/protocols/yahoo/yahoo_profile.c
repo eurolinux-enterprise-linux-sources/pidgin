@@ -1023,7 +1023,7 @@ yahoo_got_photo(PurpleUtilFetchUrlData *url_data, gpointer data,
 		purple_debug_misc("yahoo", "after utf8 conversion: stripped = (%s)\n", stripped);
 	}
 
-	if (strings && profile_state == PROFILE_STATE_DEFAULT) {
+	if (profile_state == PROFILE_STATE_DEFAULT) {
 #if 0
 	/* extract their Yahoo! ID and put it in. Don't bother marking has_info as
 	 * true, since the Yahoo! ID will always be there */
@@ -1035,7 +1035,7 @@ yahoo_got_photo(PurpleUtilFetchUrlData *url_data, gpointer data,
 
 #if PHOTO_SUPPORT
 	/* Try to put the photo in there too, if there's one and is readable */
-	if (url_text && len != 0) {
+	if (data && url_text && len != 0) {
 		if (strstr(url_text, "400 Bad Request")
 				|| strstr(url_text, "403 Forbidden")
 				|| strstr(url_text, "404 Not Found")) {

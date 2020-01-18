@@ -949,15 +949,17 @@ straight_to_hell(gpointer data, gint source, const gchar *error_message)
 	buf = g_strdup_printf("GET " AIMHASHDATA "?offset=%ld&len=%ld&modname=%s HTTP/1.0\n\n",
 			pos->offset, pos->len, pos->modname ? pos->modname : "");
 	result = send(pos->fd, buf, strlen(buf), 0);
-	if (result < 0)
-		purple_debug_error("oscar", "Error writing %" G_GSIZE_FORMAT
-				" bytes to fetch AIM hash data: %s\n",
-				strlen(buf), g_strerror(errno));
-	else if ((gsize)result != strlen(buf))
-		purple_debug_error("oscar", "Tried to write %"
-				G_GSIZE_FORMAT " bytes to fetch AIM hash data but "
-				"instead wrote %" G_GSSIZE_FORMAT " bytes\n",
-				strlen(buf), result);
+	if (result != strlen(buf)) {
+		if (result < 0)
+			purple_debug_error("oscar", "Error writing %" G_GSIZE_FORMAT
+					" bytes to fetch AIM hash data: %s\n",
+					strlen(buf), g_strerror(errno));
+		else
+			purple_debug_error("oscar", "Tried to write %"
+					G_GSIZE_FORMAT " bytes to fetch AIM hash data but "
+					"instead wrote %" G_GSSIZE_FORMAT " bytes\n",
+					strlen(buf), result);
+	}
 	g_free(buf);
 	g_free(pos->modname);
 	pos->inpa = purple_input_add(pos->fd, PURPLE_INPUT_READ, damn_you, pos);
@@ -1066,7 +1068,7 @@ purple_parse_auth_resp(OscarData *od, FlapConnection *conn, FlapFrame *fr, ...)
 	PurpleConnection *gc = od->gc;
 	PurpleAccount *account = purple_connection_get_account(gc);
 	char *host; int port;
-	size_t i;
+	int i;
 	FlapConnection *newconn;
 	va_list ap;
 	struct aim_authresp_info *info;
@@ -1869,8 +1871,8 @@ incomingim_chan4(OscarData *od, FlapConnection *conn, aim_userinfo_t *userinfo, 
 		return 1;
 
 	purple_debug_info("oscar",
-		"Received a channel 4 message of type 0x%02hx.\n",
-		(guint16)args->type);
+					"Received a channel 4 message of type 0x%02hx.\n",
+					args->type);
 
 	/*
 	 * Split up the message at the delimeter character, then convert each
@@ -2173,11 +2175,11 @@ static int purple_parse_misses(OscarData *od, FlapConnection *conn, FlapFrame *f
 	PurpleAccount *account = purple_connection_get_account(gc);
 	char *buf;
 	va_list ap;
-	guint16 nummissed, reason;
+	guint16 chan, nummissed, reason;
 	aim_userinfo_t *userinfo;
 
 	va_start(ap, fr);
-	va_arg(ap, unsigned int); /* guint16 chan */
+	chan = (guint16)va_arg(ap, unsigned int);
 	userinfo = va_arg(ap, aim_userinfo_t *);
 	nummissed = (guint16)va_arg(ap, unsigned int);
 	reason = (guint16)va_arg(ap, unsigned int);
@@ -2652,12 +2654,12 @@ static int purple_icon_parseicon(OscarData *od, FlapConnection *conn, FlapFrame 
 	PurpleConnection *gc = od->gc;
 	va_list ap;
 	char *bn;
-	guint8 *iconcsum, *icon;
+	guint8 iconcsumtype, *iconcsum, *icon;
 	guint16 iconcsumlen, iconlen;
 
 	va_start(ap, fr);
 	bn = va_arg(ap, char *);
-	va_arg(ap, int); /* iconsumtype */
+	iconcsumtype = va_arg(ap, int);
 	iconcsum = va_arg(ap, guint8 *);
 	iconcsumlen = va_arg(ap, int);
 	icon = va_arg(ap, guint8 *);
@@ -2723,6 +2725,7 @@ purple_icons_fetch(PurpleConnection *gc)
 }
 
 static int purple_selfinfo(OscarData *od, FlapConnection *conn, FlapFrame *fr, ...) {
+	int warning_level;
 	va_list ap;
 	aim_userinfo_t *info;
 
@@ -2731,6 +2734,15 @@ static int purple_selfinfo(OscarData *od, FlapConnection *conn, FlapFrame *fr, .
 	va_end(ap);
 
 	purple_connection_set_display_name(od->gc, info->bn);
+
+	/*
+	 * What's with the + 0.5?
+	 * The 0.5 is basically poor-man's rounding.  Normally
+	 * casting "13.7" to an int will truncate to "13," but
+	 * with 13.7 + 0.5 = 14.2, which becomes "14" when
+	 * truncated.
+	 */
+	warning_level = info->warnlevel/10.0 + 0.5;
 
 	return 1;
 }
@@ -2962,13 +2974,14 @@ static int purple_popup(OscarData *od, FlapConnection *conn, FlapFrame *fr, ...)
 	gchar *text;
 	va_list ap;
 	char *msg, *url;
+	guint16 wid, hei, delay;
 
 	va_start(ap, fr);
 	msg = va_arg(ap, char *);
 	url = va_arg(ap, char *);
-	va_arg(ap, int); /* guint16 wid */
-	va_arg(ap, int); /* guint16 hei */
-	va_arg(ap, int); /* guint16 delay */
+	wid = (guint16) va_arg(ap, int);
+	hei = (guint16) va_arg(ap, int);
+	delay = (guint16) va_arg(ap, int);
 	va_end(ap);
 
 	text = g_strdup_printf("%s<br><a href=\"%s\">%s</a>", msg, url, url);
@@ -3458,11 +3471,13 @@ oscar_set_info(PurpleConnection *gc, const char *rawinfo)
 static guint32
 oscar_get_extended_status(PurpleConnection *gc)
 {
+	OscarData *od;
 	PurpleAccount *account;
 	PurpleStatus *status;
 	const gchar *status_id;
 	guint32 data = 0x00000000;
 
+	od = purple_connection_get_protocol_data(gc);
 	account = purple_connection_get_account(gc);
 	status = purple_account_get_active_status(account);
 	status_id = purple_status_get_id(status);
@@ -3879,6 +3894,8 @@ static int purple_ssi_parselist(OscarData *od, FlapConnection *conn, FlapFrame *
 	guint32 tmp;
 	PurpleStoredImage *img;
 	va_list ap;
+	guint16 fmtver, numitems;
+	guint32 timestamp;
 	guint16 deny_entry_type = aim_ssi_getdenyentrytype(od);
 
 	gc = od->gc;
@@ -3886,9 +3903,9 @@ static int purple_ssi_parselist(OscarData *od, FlapConnection *conn, FlapFrame *
 	account = purple_connection_get_account(gc);
 
 	va_start(ap, fr);
-	va_arg(ap, int); /* guint16 fmtver */
-	va_arg(ap, int); /* guint16 numitems */
-	va_arg(ap, guint32); /* timestamp */
+	fmtver = (guint16)va_arg(ap, int);
+	numitems = (guint16)va_arg(ap, int);
+	timestamp = va_arg(ap, guint32);
 	va_end(ap);
 
 	/* Don't attempt to re-request our buddy list later */
@@ -3994,7 +4011,7 @@ static int purple_ssi_parselist(OscarData *od, FlapConnection *conn, FlapFrame *
 		if (curitem->name && !g_utf8_validate(curitem->name, -1, NULL)) {
 			/* Got node with invalid UTF-8 in the name.  Skip it. */
 			purple_debug_warning("oscar", "ssi: server list contains item of "
-					"type 0x%04hx with a non-utf8 name\n", curitem->type);
+					"type 0x%04hhx with a non-utf8 name\n", curitem->type);
 			continue;
 		}
 
@@ -4163,7 +4180,7 @@ static int purple_ssi_parseack(OscarData *od, FlapConnection *conn, FlapFrame *f
 				if ((retval->name != NULL) && !purple_conv_present_error(retval->name, purple_connection_get_account(gc), buf))
 					purple_notify_error(gc, NULL, _("Unable to Add"), buf);
 				g_free(buf);
-			} break;
+			}
 
 			case 0x000e: { /* buddy requires authorization */
 				if ((retval->action == SNAC_SUBTYPE_FEEDBAG_ADD) && (retval->name))
@@ -4271,14 +4288,14 @@ purple_ssi_parseaddmod(OscarData *od, FlapConnection *conn, FlapFrame *fr, ...)
 static int purple_ssi_authgiven(OscarData *od, FlapConnection *conn, FlapFrame *fr, ...) {
 	PurpleConnection *gc = od->gc;
 	va_list ap;
-	char *bn;
+	char *bn, *msg;
 	gchar *dialog_msg, *nombre;
 	struct name_data *data;
 	PurpleBuddy *buddy;
 
 	va_start(ap, fr);
 	bn = va_arg(ap, char *);
-	va_arg(ap, char *); /* msg */
+	msg = va_arg(ap, char *);
 	va_end(ap);
 
 	purple_debug_info("oscar",
@@ -4591,6 +4608,8 @@ const char *oscar_list_emblem(PurpleBuddy *b)
 	OscarData *od = NULL;
 	PurpleAccount *account = NULL;
 	PurplePresence *presence;
+	PurpleStatus *status;
+	const char *status_id;
 	aim_userinfo_t *userinfo = NULL;
 	const char *name;
 
@@ -4604,6 +4623,8 @@ const char *oscar_list_emblem(PurpleBuddy *b)
 		userinfo = aim_locate_finduserinfo(od, name);
 
 	presence = purple_buddy_get_presence(b);
+	status = purple_presence_get_active_status(presence);
+	status_id = purple_status_get_id(status);
 
 	if (purple_presence_is_online(presence) == FALSE) {
 		char *gname;
@@ -4662,6 +4683,7 @@ char *oscar_status_text(PurpleBuddy *b)
 	OscarData *od;
 	const PurplePresence *presence;
 	const PurpleStatus *status;
+	const char *id;
 	const char *message;
 	gchar *ret = NULL;
 
@@ -4670,6 +4692,7 @@ char *oscar_status_text(PurpleBuddy *b)
 	od = purple_connection_get_protocol_data(gc);
 	presence = purple_buddy_get_presence(b);
 	status = purple_presence_get_active_status(presence);
+	id = purple_status_get_id(status);
 
 	if ((od != NULL) && !purple_presence_is_online(presence))
 	{

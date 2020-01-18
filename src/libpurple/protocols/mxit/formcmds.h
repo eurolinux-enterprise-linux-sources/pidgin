@@ -26,8 +26,10 @@
 #ifndef		_MXIT_FORMCMDS_H_
 #define		_MXIT_FORMCMDS_H_
 
-#include	"protocol.h"
+#include	"mxit.h"
+
 
 int mxit_parse_command(struct RXMsgData* mx, char* message);
+
 
 #endif		/* _MXIT_FORMCMDS_H_ */
